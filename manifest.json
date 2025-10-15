@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "TabSense AI",
+  "description": "TabSense AI eliminates tab overload by adding memory, understanding, and assistance directly inside your browser. Ask Tabby to find, summarize, or manage your tabs conversationally.",
+  "version": "1.0",
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  },
+  "permissions": [
+    "tabs",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ]
+}
