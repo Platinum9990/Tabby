@@ -1,6 +1,5 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { TabbyBubble } from './components/TabbyBubble';
 import { ChatInterface } from './components/ChatInterface';
 import { TabList } from './components/TabList';
 import { useMockTabs } from './hooks/useMockTabs';
@@ -11,7 +10,6 @@ import { INITIAL_MESSAGES, CONTEXT_SUGGESTIONS, MOCK_MEMORY_TABS } from './const
 
 const App: React.FC = () => {
   const { tabs, activeTabId, setActiveTabId, closeTab, addTab } = useMockTabs();
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -20,9 +18,8 @@ const App: React.FC = () => {
   const handleNewMessage = async (text: string) => {
     if (isLoading) return;
 
-    let currentActiveId = activeTabId;
-    if(text.toLowerCase().includes('active tab') && activeTabId) {
-        text = text.replace(/active tab/gi, `tab with ID ${activeTabId}`);
+    if (text.toLowerCase().includes('active tab') && activeTabId) {
+      text = text.replace(/active tab/gi, `tab with ID ${activeTabId}`);
     }
 
     const userMessage: ChatMessage = { id: Date.now(), sender: 'user', text };
@@ -71,10 +68,9 @@ const App: React.FC = () => {
       
       if (foundKey) {
         const tabsToReopen = MOCK_MEMORY_TABS[foundKey];
-
         if (tabsToReopen.length > 0) {
           tabsToReopen.forEach(tab => addTab(tab));
-          aiResponseText = `I've reopened ${tabsToReopen.length} tabs from your session on "${foundKey}". The first one should be active for you.`;
+          aiResponseText = `I've reopened ${tabsToReopen.length} tabs from your session on "${foundKey}".`;
         } else {
            aiResponseText = `I found a session on "${foundKey}", but it was empty.`;
         }
@@ -97,7 +93,6 @@ const App: React.FC = () => {
         }
     }
 
-
     const aiMessage: ChatMessage = {
       id: Date.now() + 1,
       sender: 'ai',
@@ -113,7 +108,7 @@ const App: React.FC = () => {
         const aiMessage: ChatMessage = {
             id: Date.now(),
             sender: 'ai',
-            text: `Here's a summary of the "${tab.title}" tab: ${summary}`
+            text: `Here's a summary of the "${tab.title}" tab:\n\n${summary}`
         };
         setMessages(prev => [...prev, aiMessage]);
     } catch(e) {
@@ -130,7 +125,7 @@ const App: React.FC = () => {
   };
 
   const handleIdleTab = useCallback(async (tab: Tab) => {
-    if (alertedIdleTabs.current.has(tab.id) || !isChatOpen) return;
+    if (alertedIdleTabs.current.has(tab.id)) return;
     alertedIdleTabs.current.add(tab.id);
 
     const summary = await getSummaryForTab(tab);
@@ -151,7 +146,7 @@ const App: React.FC = () => {
       ]
     };
     setMessages(prev => [...prev, idleMessage]);
-  }, [closeTab, isChatOpen]);
+  }, [closeTab]);
 
   useEffect(() => {
     const idleTab = tabs.find(t => t.isIdle);
@@ -160,38 +155,29 @@ const App: React.FC = () => {
     }
   }, [tabs, handleIdleTab]);
 
-
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 font-sans p-4 md:p-8 relative">
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold text-brand-secondary">TabSense AI</h1>
-          <p className="text-gray-400 mt-2">Your intelligent browser assistant, powered by Gemini.</p>
+    <div className="flex flex-col h-[550px] max-h-[600px] bg-gray-900 text-gray-100 font-sans">
+      {/* Top Section: Header & Tabs */}
+      <div className="flex-shrink-0 p-4 overflow-y-auto">
+        <header className="mb-4">
+          <h1 className="text-3xl font-bold text-brand-secondary">TabSense AI</h1>
+          <p className="text-gray-400 mt-1 text-sm">Your intelligent browser assistant.</p>
         </header>
         
         <main>
           <TabList tabs={tabs} activeTabId={activeTabId} onTabClick={setActiveTabId} onTabClose={closeTab} />
-          
-          <div className="mt-8 p-6 bg-gray-800 rounded-lg shadow-xl">
-             <h2 className="text-xl font-semibold mb-2 text-brand-secondary">Active Tab Content</h2>
-             <div className="prose prose-invert max-w-none text-gray-300">
-                <p>{"The content of the active tab will be read by Tabby when you request a summary."}</p>
-             </div>
-          </div>
         </main>
       </div>
 
-      <TabbyBubble onClick={() => setIsChatOpen(prev => !prev)} />
-
-      {isChatOpen && (
+      {/* Bottom Section: Chat Interface */}
+      <div className="flex-grow flex flex-col min-h-0 border-t border-gray-700">
         <ChatInterface
           messages={messages}
           onSendMessage={handleNewMessage}
-          onClose={() => setIsChatOpen(false)}
           isLoading={isLoading}
           suggestions={CONTEXT_SUGGESTIONS}
         />
-      )}
+      </div>
     </div>
   );
 };

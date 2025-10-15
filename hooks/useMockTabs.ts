@@ -5,9 +5,11 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Tab } from '../types';
 import { INITIAL_TABS, IDLE_TIMEOUT_MS } from '../constants';
 
-const IS_EXTENSION = !!(window.chrome && chrome.tabs);
+// FIX: Safely check for the chrome object to prevent compile-time error on `window.chrome`.
+const IS_EXTENSION = typeof chrome !== 'undefined' && !!chrome.tabs;
 
-const chromeTabToAppTab = (chromeTab: chrome.tabs.Tab): Tab => ({
+// FIX: Use `any` for the `chromeTab` parameter type because `declare const chrome: any` does not provide specific types for `chrome.tabs.Tab`.
+const chromeTabToAppTab = (chromeTab: any): Tab => ({
     id: String(chromeTab.id!),
     title: chromeTab.title || 'Untitled',
     url: chromeTab.url || '',
@@ -55,7 +57,8 @@ export const useMockTabs = () => {
       refreshTabs();
 
       const onTabChange = () => refreshTabs();
-      const onTabActivated = (activeInfo: chrome.tabs.TabActiveInfo) => {
+      // FIX: Use `any` for the `activeInfo` parameter type because `declare const chrome: any` does not provide specific types for `chrome.tabs.TabActiveInfo`.
+      const onTabActivated = (activeInfo: any) => {
           const activeId = String(activeInfo.tabId);
           setActiveTabId(activeId);
           setTabTimestamps(prev => ({...prev, [activeId]: Date.now()}));
