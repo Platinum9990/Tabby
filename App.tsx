@@ -156,21 +156,26 @@ const App: React.FC = () => {
   }, [tabs, handleIdleTab]);
 
   return (
-    <div className="flex flex-col h-[550px] max-h-[600px] bg-gray-900 text-gray-100 font-sans">
+    <div className="flex flex-col h-[550px] max-h-[600px] bg-bg-primary text-text-primary font-sans">
       {/* Top Section: Header & Tabs */}
       <div className="flex-shrink-0 p-4 overflow-y-auto">
         <header className="mb-4">
-          <h1 className="text-3xl font-bold text-brand-secondary">TabSense AI</h1>
-          <p className="text-gray-400 mt-1 text-sm">Your intelligent browser assistant.</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-brand-secondary to-brand-accent text-transparent bg-clip-text animate-gradient-pan bg-[200%_auto]">TabSense AI</h1>
+          <p className="text-text-secondary mt-1 text-sm">Your intelligent browser assistant.</p>
         </header>
         
         <main>
           <TabList tabs={tabs} activeTabId={activeTabId} onTabClick={setActiveTabId} onTabClose={closeTab} />
         </main>
       </div>
+      
+      {/* Decorative Divider */}
+      <div className="px-4">
+        <div className="h-px bg-gradient-to-r from-transparent via-brand-secondary to-transparent"></div>
+      </div>
 
       {/* Bottom Section: Chat Interface */}
-      <div className="flex-grow flex flex-col min-h-0 border-t border-gray-700">
+      <div className="flex-grow flex flex-col min-h-0">
         <ChatInterface
           messages={messages}
           onSendMessage={handleNewMessage}

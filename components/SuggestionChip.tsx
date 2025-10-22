@@ -8,9 +8,9 @@ interface SuggestionChipProps {
 }
 
 export const SuggestionChip: React.FC<SuggestionChipProps> = ({ text, onClick, isAction = false }) => {
-  const baseClasses = "px-3 py-1 text-xs font-medium rounded-full cursor-pointer transition-colors duration-200";
-  const suggestionClasses = "bg-gray-600 hover:bg-gray-500 text-gray-200";
-  const actionClasses = "bg-brand-secondary hover:bg-blue-500 text-white";
+  const baseClasses = "px-3 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-all duration-200 transform hover:-translate-y-0.5 shadow-sm";
+  const suggestionClasses = "bg-bg-secondary hover:bg-gray-700 text-text-secondary border border-glass-border";
+  const actionClasses = "bg-brand-secondary hover:bg-blue-500 text-white border border-transparent";
 
   return (
     <button

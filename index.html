@@ -6,20 +6,37 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TabSense AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
             colors: {
-              'brand-primary': '#1e40af',
+              'bg-primary': '#111827', // Darker blue-gray
+              'bg-secondary': '#1F2937', // Lighter surface color
+              'brand-primary': '#4f46e5',
               'brand-secondary': '#3b82f6',
-              'bubble': '#1e3a8a',
+              'brand-accent': '#818cf8',
+              'text-primary': '#f9fafb',
+              'text-secondary': '#9ca3af',
+              'bubble-user': '#4f46e5',
+              'bubble-ai-start': '#3b82f6',
+              'bubble-ai-end': '#6366f1',
+              'glass-border': 'rgba(255, 255, 255, 0.1)',
+              'glass-bg': 'rgba(31, 41, 55, 0.5)',
             },
             animation: {
               'subtle-pulse': 'subtle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'fade-in': 'fade-in 0.5s ease-out forwards',
               'slide-in-up': 'slide-in-up 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
+              'thinking-dots': 'thinking-dots 1.4s infinite ease-in-out both',
+              'gradient-pan': 'gradient-pan 3s ease infinite',
             },
             keyframes: {
               'subtle-pulse': {
@@ -33,6 +50,15 @@
               'slide-in-up': {
                 '0%': { transform: 'translateY(20px)', opacity: '0' },
                 '100%': { transform: 'translateY(0)', opacity: '1' },
+              },
+              'thinking-dots': {
+                  '0%, 80%, 100%': { transform: 'scale(0)' },
+                  '40%': { transform: 'scale(1.0)' },
+              },
+              'gradient-pan': {
+                '0%': { backgroundPosition: '0% 50%' },
+                '50%': { backgroundPosition: '100% 50%' },
+                '100%': { backgroundPosition: '0% 50%' },
               }
             }
           }
@@ -45,6 +71,20 @@
         min-height: 550px;
         max-height: 600px;
         overflow-y: auto;
+        font-family: 'Inter', sans-serif;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #4a5568;
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #718096;
       }
     </style>
   <script type="importmap">
@@ -58,7 +98,7 @@
 }
 </script>
 </head>
-  <body class="bg-gray-900 text-white antialiased">
+  <body class="bg-bg-primary text-text-primary antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
