@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tabby</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <div id="root">
+    <div class="header-area draggable-header" id="draggable-header">
+      <div class="title-gradient">TabSense AI</div>
+      <div class="subtitle">Your intelligent browser assistant.</div>
+    </div>
+    <div class="tabs-section">
+      <div class="tabs-title">Your Open Tabs</div>
+      <div id="tabs-list"></div>
+    </div>
+    <div class="chat-section">
+      <div id="chat-messages"></div>
+      <div class="chat-input-container">
+        <input id="chat-input" placeholder="Ask Tabby anything..." />
+        <button id="microphone-button" title="Speak to Tabby">🎤</button>
+        <button id="chat-send"><span>➤</span></button>
+      </div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

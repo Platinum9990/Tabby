@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Tabby — AI Tab Manager (Prototype)",
+  "version": "0.1.0",
+  "description": "Find, summarize and manage browser tabs using AI (prototype).",
+  "permissions": ["storage", "tabs", "scripting", "alarms", "notifications", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_popup": "popup/index.html",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon-128.png"
+    }
+  },
+  "icons": {
+     "16": "assets/icon16.png",
+     "48": "assets/icon48.png",
+     "128": "assets/icon-128.png"
+  }
+}
