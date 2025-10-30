@@ -14,6 +14,9 @@ body {
 	padding: 28px 20px 20px 20px;
 	min-height: 560px;
 	color: #eaf2fb;
+	display: flex;
+	flex-direction: column;
+	height: calc(100vh - 48px);
 }
 .header-area {
 	margin-bottom: 18px;
@@ -245,13 +248,14 @@ body {
 	background: rgba(40, 56, 90, 0.7);
 	border-radius: 18px;
 	padding: 16px 12px 12px 12px;
-	margin-bottom: 10px;
+	margin-bottom: 0;
 	box-shadow: 0 2px 16px rgba(30,60,114,0.08);
 	backdrop-filter: blur(10px);
 	border: 1px solid rgba(255,255,255,0.1);
 	min-height: 180px;
 	display: flex;
 	flex-direction: column;
+	flex: 1;
 }
 .chat-section .collapsible-content {
 	display: flex;
@@ -264,8 +268,9 @@ body {
 	flex-direction: column;
 	gap: 10px;
 	margin-bottom: 8px;
-	max-height: 120px;
+	flex: 1;
 	overflow-y: auto;
+	min-height: 100px;
 }
 .chat-bubble {
 	max-width: 80%;
