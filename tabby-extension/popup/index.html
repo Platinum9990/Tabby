@@ -10,27 +10,66 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <div id="root">
     <div class="header-area draggable-header" id="draggable-header">
-      <div class="title-gradient">TabSense AI</div>
-      <div class="subtitle">Your intelligent browser assistant.</div>
-    </div>
-    <div class="tabs-section">
-      <div class="tabs-title">Your Open Tabs</div>
-      <div id="tabs-list"></div>
-    </div>
-    <div class="chat-section">
-      <div id="chat-messages"></div>
-      <div class="chat-input-container">
-        <input id="chat-input" placeholder="Ask Tabby anything..." />
-        <button id="microphone-button" title="Speak to Tabby">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2C10.34 2 9 3.34 9 5V11C9 12.66 10.34 14 12 14C13.66 14 15 12.66 15 11V5C15 3.34 13.66 2 12 2Z" fill="currentColor"/>
-            <path d="M19 11C19 15.42 15.42 19 11 19H13C17.42 19 21 15.42 21 11H19Z" fill="currentColor"/>
-            <path d="M5 11C5 15.42 8.58 19 13 19H11C6.58 19 3 15.42 3 11H5Z" fill="currentColor"/>
-            <path d="M12 22V19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            <path d="M8 22H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <div class="header-content">
+        <div class="title-section">
+          <div class="title-gradient">TabSense AI</div>
+          <div class="subtitle">Your intelligent browser assistant.</div>
+        </div>
+        <button id="theme-toggle" title="Toggle theme" class="theme-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 3V1M12 23V21M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78M1 12H3M21 12H23M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
           </svg>
         </button>
-        <button id="chat-send"><span>➤</span></button>
+      </div>
+    </div>
+    <div class="tabs-section">
+      <div class="section-header">
+        <div class="tabs-title">Your Open Tabs</div>
+        <button class="collapse-btn" id="tabs-collapse" title="Toggle tabs section">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div id="tabs-list" class="collapsible-content">
+        <div class="tab-search-container">
+          <input id="tab-search" placeholder="Search tabs..." />
+          <div class="tab-actions">
+            <button id="close-all-tabs" title="Close all tabs" class="action-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div id="tabs-container"></div>
+      </div>
+    </div>
+    <div class="chat-section">
+      <div class="section-header">
+        <div class="tabs-title">Chat with Tabby</div>
+        <button class="collapse-btn" id="chat-collapse" title="Toggle chat section">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="collapsible-content">
+        <div id="chat-messages"></div>
+        <div class="chat-input-container">
+          <input id="chat-input" placeholder="Ask Tabby anything..." />
+          <button id="microphone-button" title="Speak to Tabby">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C10.34 2 9 3.34 9 5V11C9 12.66 10.34 14 12 14C13.66 14 15 12.66 15 11V5C15 3.34 13.66 2 12 2Z" fill="currentColor"/>
+              <path d="M19 11C19 15.42 15.42 19 11 19H13C17.42 19 21 15.42 21 11H19Z" fill="currentColor"/>
+              <path d="M5 11C5 15.42 8.58 19 13 19H11C6.58 19 3 15.42 3 11H5Z" fill="currentColor"/>
+              <path d="M12 22V19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M8 22H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button id="chat-send"><span>➤</span></button>
+        </div>
       </div>
     </div>
   </div>
