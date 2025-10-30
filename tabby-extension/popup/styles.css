@@ -164,6 +164,39 @@ body {
 #chat-input:focus {
 	box-shadow: 0 0 0 2px #6dd5ed;
 }
+#microphone-button {
+	margin-left: 8px;
+	padding: 8px;
+	border-radius: 8px;
+	border: none;
+	background: rgba(255,255,255,0.15);
+	color: #6dd5ed;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 40px;
+	height: 40px;
+}
+#microphone-button:hover {
+	background: rgba(109, 213, 237, 0.2);
+	color: #ffffff;
+	transform: scale(1.05);
+}
+#microphone-button:active {
+	transform: scale(0.95);
+}
+#microphone-button.recording {
+	background: linear-gradient(90deg, #ff6b6b 0%, #ee5a52 100%);
+	color: #ffffff;
+	animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+	0% { box-shadow: 0 0 0 0 rgba(238, 90, 82, 0.7); }
+	70% { box-shadow: 0 0 0 10px rgba(238, 90, 82, 0); }
+	100% { box-shadow: 0 0 0 0 rgba(238, 90, 82, 0); }
+}
 #chat-send {
 	margin-left: 8px;
 	padding: 8px 14px;

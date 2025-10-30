@@ -48,11 +48,11 @@ if (micBtn) {
     if (isListening) {
       recognition.stop();
       isListening = false;
-      micBtn.textContent = '🎤';
+      micBtn.classList.remove('recording');
     } else {
       recognition.start();
       isListening = true;
-      micBtn.textContent = '👂';
+      micBtn.classList.add('recording');
     }
   });
 }
@@ -62,7 +62,7 @@ if (recognition) {
     const transcript = event.results[0][0].transcript;
     addMessage(transcript, 'user');
     chatInput.value = '';
-    micBtn.textContent = '🎤';
+    micBtn.classList.remove('recording');
     isListening = false;
     // Send transcript as chat message
     chatSend.click();
@@ -70,12 +70,12 @@ if (recognition) {
   };
   recognition.onerror = (event) => {
     isListening = false;
-    micBtn.textContent = '🎤';
+    micBtn.classList.remove('recording');
     alert(`Speech recognition error: ${event.error}`);
   };
   recognition.onend = () => {
     isListening = false;
-    micBtn.textContent = '🎤';
+    micBtn.classList.remove('recording');
   };
 }
 // Removed stray btnList reference
