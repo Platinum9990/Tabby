@@ -1,8 +1,13 @@
 // Background service worker for Tabby (prototype)
 
-// --- Hackathon Note: Remove Server Dependency ---
-// const SERVER_URL = 'http://localhost:3000'; // Replace server calls with window.ai
-// ---------------------------------------------
+// --- Enhanced AI Integration with Chrome's Built-in APIs ---
+// Prompt API: Main "brain" for generating text and structured output
+// Summarizer API: Distill long text into short insights
+// Writer API: Create new, original text
+// Rewriter API: Improve or rephrase existing content
+// Translator API: Multi-language capabilities
+// Proofreader API: Correct grammar mistakes
+// --------------------------------------------------------
 
 // Keep a simple in-memory map of tabId -> metadata
 const tabMeta = {};
@@ -10,6 +15,66 @@ const tabMeta = {};
 let recentlyClosed = [];
 // Store last interacted/created tab info
 let lastOpenedTabInfo = null;
+
+// AI API Availability Check
+let aiCapabilities = {
+  prompt: false,
+  summarizer: false,
+  writer: false,
+  rewriter: false,
+  translator: false,
+  proofreader: false
+};
+
+// Initialize AI capabilities on startup
+async function initializeAI() {
+  try {
+    if (chrome.ai) {
+      // Check Prompt API
+      if (chrome.ai.canCreateTextSession) {
+        const availability = await chrome.ai.canCreateTextSession();
+        aiCapabilities.prompt = availability === 'readily';
+      }
+      
+      // Check Summarizer API
+      if (chrome.ai.summarizer && chrome.ai.summarizer.capabilities) {
+        const sumCapabilities = await chrome.ai.summarizer.capabilities();
+        aiCapabilities.summarizer = sumCapabilities.available === 'readily';
+      }
+      
+      // Check Writer API
+      if (chrome.ai.writer && chrome.ai.writer.capabilities) {
+        const writerCapabilities = await chrome.ai.writer.capabilities();
+        aiCapabilities.writer = writerCapabilities.available === 'readily';
+      }
+      
+      // Check Rewriter API
+      if (chrome.ai.rewriter && chrome.ai.rewriter.capabilities) {
+        const rewriterCapabilities = await chrome.ai.rewriter.capabilities();
+        aiCapabilities.rewriter = rewriterCapabilities.available === 'readily';
+      }
+      
+      // Check Translator API
+      if (chrome.ai.translator && chrome.ai.translator.capabilities) {
+        const translatorCapabilities = await chrome.ai.translator.capabilities();
+        aiCapabilities.translator = translatorCapabilities.available === 'readily';
+      }
+      
+      // Check Proofreader API (if available)
+      if (chrome.ai.proofreader && chrome.ai.proofreader.capabilities) {
+        const proofreaderCapabilities = await chrome.ai.proofreader.capabilities();
+        aiCapabilities.proofreader = proofreaderCapabilities.available === 'readily';
+      }
+      
+      console.log('AI Capabilities initialized:', aiCapabilities);
+    }
+  } catch (error) {
+    console.warn('Error initializing AI capabilities:', error);
+  }
+}
+
+// Initialize AI on startup
+initializeAI();
 
 // --- Load initial state from storage ---
 chrome.storage.local.get(['recentlyClosed', 'lastOpenedTabInfo'], (result) => {
@@ -192,26 +257,35 @@ chrome.alarms.onAlarm.addListener(async alarm => {
   console.log(`Tab ${tabId} (${meta.title}) is idle. Summarizing...`);
   let summary = 'Could not summarize.';
   try {
-     // --- Option A: Use Built-in Summarizer API (if available and suitable) ---
-     /*
-     if (chrome.summarizer && meta.text) { // Check if API exists
-         const summarizer = await chrome.summarizer.create({ type: 'key-points', length: 'short' });
-         const result = await summarizer.summarize(meta.text);
-         summary = result.output || 'No summary available.';
-         await summarizer.destroy(); // Clean up
-     } else { // Fallback or primary: Use Prompt API
-     */
-     // --- Option B: Use Built-in Prompt API (window.ai equivalent for service worker is chrome.ai) ---
-     if (chrome.ai && meta.text) { // Check if API exists
-        const session = await chrome.ai.createTextSession();
-        const prompt = `Summarize the key points of the following web page content in one or two sentences:\n\nTitle: ${meta.title}\nContent Snippet: ${meta.text.slice(0, 2000)}`; // Limit prompt length
-        summary = await session.prompt(prompt);
-        await session.destroy(); // Clean up
+     // --- Enhanced AI Summarization with Multiple APIs ---
+     if (aiCapabilities.summarizer && chrome.ai.summarizer && meta.text) {
+       // Use dedicated Summarizer API for best results
+       const summarizer = await chrome.ai.summarizer.create({
+         type: 'tl;dr',
+         format: 'plain-text',
+         length: 'short'
+       });
+       summary = await summarizer.summarize(meta.text.slice(0, 4000));
+       await summarizer.destroy();
+       console.log('Used Summarizer API for tab summary');
+       
+     } else if (aiCapabilities.prompt && chrome.ai && meta.text) {
+       // Fallback to Prompt API with specialized prompt
+       const session = await chrome.ai.createTextSession();
+       const prompt = `You are a helpful browser assistant. Summarize this web page content in 1-2 clear sentences, focusing on the main topic and key insights:
+
+Title: ${meta.title}
+Content: ${meta.text.slice(0, 2000)}
+
+Summary:`;
+       summary = await session.prompt(prompt);
+       await session.destroy();
+       console.log('Used Prompt API for tab summary');
+       
      } else {
-        summary = 'Built-in AI API not available for summarization.';
-        console.warn(summary);
+       summary = 'AI summarization not available for this tab.';
+       console.warn('No AI capabilities available for summarization');
      }
-     /* } // End of Summarizer API else block */
 
      console.log(`Summary for idle tab ${tabId}: ${summary}`);
 
@@ -274,7 +348,116 @@ chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) =
 // Message handling from popup/content scripts
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
-    if (msg.type === 'search') {
+    // --- New AI-Enhanced Commands ---
+    if (msg.type === 'aiChat') {
+      console.log('Received aiChat message:', msg.query);
+      try {
+        if (!aiCapabilities.prompt || !chrome.ai) {
+          throw new Error("AI chat not available.");
+        }
+
+        const session = await chrome.ai.createTextSession();
+        
+        // Enhanced context-aware prompt
+        const tabCount = Object.keys(tabMeta).length;
+        const activeTabInfo = await chrome.tabs.query({active: true, currentWindow: true});
+        const activeTab = activeTabInfo[0];
+        
+        const prompt = `You are Tabby, an intelligent browser assistant. Context:
+- User has ${tabCount} open tabs
+- Currently viewing: ${activeTab?.title || 'Unknown page'}
+- Available commands: find tabs, summarize content, manage browsing sessions
+
+User question: "${msg.query}"
+
+Provide a helpful, concise response as their browsing companion:`;
+
+        const response = await session.prompt(prompt);
+        await session.destroy();
+        
+        sendResponse({ ok: true, response });
+      } catch (err) {
+        console.error('AI Chat failed:', err);
+        sendResponse({ ok: false, error: `AI chat failed: ${err.message}` });
+      }
+
+    } else if (msg.type === 'summarizeTab') {
+      console.log('Received summarizeTab message:', msg.tabId);
+      try {
+        const tabId = msg.tabId || (await chrome.tabs.query({active: true, currentWindow: true}))[0]?.id;
+        const meta = tabMeta[tabId];
+        
+        if (!meta || !meta.text) {
+          sendResponse({ ok: false, error: "No content available for this tab." });
+          return;
+        }
+
+        let summary = '';
+        if (aiCapabilities.summarizer && chrome.ai.summarizer) {
+          const summarizer = await chrome.ai.summarizer.create({
+            type: 'key-points',
+            format: 'plain-text',
+            length: 'medium'
+          });
+          summary = await summarizer.summarize(meta.text);
+          await summarizer.destroy();
+        } else if (aiCapabilities.prompt && chrome.ai) {
+          const session = await chrome.ai.createTextSession();
+          const prompt = `Summarize this web page in 2-3 key points:
+
+Title: ${meta.title}
+Content: ${meta.text.slice(0, 3000)}
+
+Key points:`;
+          summary = await session.prompt(prompt);
+          await session.destroy();
+        } else {
+          throw new Error("Summarization not available");
+        }
+
+        sendResponse({ ok: true, summary, title: meta.title });
+      } catch (err) {
+        console.error('Summarization failed:', err);
+        sendResponse({ ok: false, error: `Summarization failed: ${err.message}` });
+      }
+
+    } else if (msg.type === 'organizeTab') {
+      console.log('Received organizeTab message');
+      try {
+        if (!aiCapabilities.prompt || !chrome.ai) {
+          throw new Error("AI organization not available.");
+        }
+
+        const session = await chrome.ai.createTextSession();
+        const tabContext = Object.entries(tabMeta)
+          .map(([id, meta]) => `${id}: ${meta.title} (${new URL(meta.url).hostname})`)
+          .join('\n');
+
+        const prompt = `Analyze these browser tabs and suggest how to organize them into logical groups:
+
+${tabContext}
+
+Suggest 3-5 groups with descriptive names and which tab IDs belong in each group. Format as JSON:
+{"groups": [{"name": "Group Name", "tabIds": [1,2,3]}]}`;
+
+        const response = await session.prompt(prompt);
+        await session.destroy();
+        
+        try {
+          const suggestions = JSON.parse(response);
+          sendResponse({ ok: true, suggestions });
+        } catch {
+          sendResponse({ ok: true, suggestions: { groups: [] }, rawResponse: response });
+        }
+      } catch (err) {
+        console.error('Tab organization failed:', err);
+        sendResponse({ ok: false, error: `Organization failed: ${err.message}` });
+      }
+
+    } else if (msg.type === 'getAiCapabilities') {
+      sendResponse({ ok: true, capabilities: aiCapabilities });
+
+    } else if (msg.type === 'search') {
       console.log('Received search message:', msg.query);
       // --- Hackathon Suggestion: Replace Server Call with Built-in Prompt API ---
       try {

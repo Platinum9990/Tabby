@@ -227,6 +227,8 @@ function renderTabs(searchQuery = '') {
 function initTabSearch() {
   const tabSearch = document.getElementById('tab-search');
   const closeAllBtn = document.getElementById('close-all-tabs');
+  const summarizeBtn = document.getElementById('summarize-current');
+  const organizeBtn = document.getElementById('organize-tabs');
   
   tabSearch.addEventListener('input', (e) => {
     renderTabs(e.target.value);
@@ -243,6 +245,40 @@ function initTabSearch() {
         });
       });
     }
+  });
+
+  // AI-powered summarize current tab
+  summarizeBtn.addEventListener('click', () => {
+    showTypingIndicator();
+    chrome.runtime.sendMessage({ type: 'summarizeTab' }, res => {
+      hideTypingIndicator();
+      if (res && res.ok) {
+        addMessage(`📄 Summary of "${res.title}":\n\n${res.summary}`, 'ai');
+      } else {
+        addMessage(`❌ ${res?.error || 'Could not summarize current tab'}`, 'ai');
+      }
+    });
+  });
+
+  // AI-powered tab organization
+  organizeBtn.addEventListener('click', () => {
+    showTypingIndicator();
+    chrome.runtime.sendMessage({ type: 'organizeTab' }, res => {
+      hideTypingIndicator();
+      if (res && res.ok && res.suggestions.groups) {
+        let response = '📁 AI suggests these tab groups:\n\n';
+        res.suggestions.groups.forEach((group, i) => {
+          response += `${i + 1}. **${group.name}**\n`;
+          if (group.tabIds && group.tabIds.length > 0) {
+            response += `   Tabs: ${group.tabIds.join(', ')}\n`;
+          }
+          response += '\n';
+        });
+        addMessage(response, 'ai');
+      } else {
+        addMessage(`🤔 ${res?.error || 'Could not analyze tabs for organization'}`, 'ai');
+      }
+    });
   });
 }
 
@@ -341,6 +377,34 @@ function addMessageWithoutSaving(text, sender, timestamp) {
 // Load chat history on startup
 loadChatHistory();
 
+// Show AI capabilities on startup
+chrome.runtime.sendMessage({ type: 'getAiCapabilities' }, res => {
+  if (res && res.ok) {
+    const capabilities = res.capabilities;
+    const availableFeatures = [];
+    
+    if (capabilities.prompt) availableFeatures.push('💬 Intelligent chat');
+    if (capabilities.summarizer) availableFeatures.push('📄 Tab summarization');
+    if (capabilities.writer) availableFeatures.push('✍️ Content generation');
+    if (capabilities.rewriter) availableFeatures.push('🔄 Text improvement');
+    if (capabilities.translator) availableFeatures.push('🌐 Translation');
+    
+    if (availableFeatures.length > 0) {
+      addMessageWithoutSaving(
+        `🤖 Tabby AI is ready! Available features:\n\n${availableFeatures.join('\n')}\n\nTry saying: "summarize this tab" or "organize my tabs"`, 
+        'ai', 
+        new Date()
+      );
+    } else {
+      addMessageWithoutSaving(
+        '🤖 Hi! I\'m Tabby, your browsing assistant. Try commands like "find tab about..." or "reopen my last tab"',
+        'ai',
+        new Date()
+      );
+    }
+  }
+});
+
 chatSend.addEventListener('click', () => {
   const text = chatInput.value.trim();
   if (!text) return;
@@ -349,6 +413,41 @@ chatSend.addEventListener('click', () => {
   
   // Show typing indicator
   showTypingIndicator();
+  
+  // Enhanced AI command processing
+  if (text.toLowerCase().includes('summarize') || text.toLowerCase().includes('summary')) {
+    // Summarize current or specified tab
+    chrome.runtime.sendMessage({ type: 'summarizeTab' }, res => {
+      hideTypingIndicator();
+      if (res && res.ok) {
+        addMessage(`📄 Summary of "${res.title}":\n\n${res.summary}`, 'ai');
+      } else {
+        addMessage(`❌ ${res?.error || 'Could not summarize tab'}`, 'ai');
+      }
+    });
+    return;
+  }
+  
+  if (text.toLowerCase().includes('organize') || text.toLowerCase().includes('group')) {
+    // Organize tabs intelligently
+    chrome.runtime.sendMessage({ type: 'organizeTab' }, res => {
+      hideTypingIndicator();
+      if (res && res.ok && res.suggestions.groups) {
+        let response = '📁 Here are some suggested tab groups:\n\n';
+        res.suggestions.groups.forEach((group, i) => {
+          response += `${i + 1}. **${group.name}**\n`;
+          if (group.tabIds && group.tabIds.length > 0) {
+            response += `   Tabs: ${group.tabIds.join(', ')}\n`;
+          }
+          response += '\n';
+        });
+        addMessage(response, 'ai');
+      } else {
+        addMessage(`🤔 ${res?.error || 'Could not organize tabs'}`, 'ai');
+      }
+    });
+    return;
+  }
   
   // Check for reopen tab intent
   const reopenMatch = text.match(/reopen (my )?(last|previous|recent|.+) tab/i);
@@ -365,29 +464,45 @@ chatSend.addEventListener('click', () => {
         return; 
       }
       if (res.ok && res.reopened) {
-        addMessage(`Reopened tab: ${res.reopened.title || res.reopened.url}`, 'ai');
+        addMessage(`✅ Reopened tab: ${res.reopened.title || res.reopened.url}`, 'ai');
       } else {
-        addMessage('No matching closed tab found.', 'ai');
+        addMessage('❌ No matching closed tab found.', 'ai');
       }
     });
     return;
   }
   
-  // Otherwise, normal search intent
-  chrome.runtime.sendMessage({ type: 'search', query: text }, res => {
+  // Check for tab search intent
+  if (text.toLowerCase().includes('find') || text.toLowerCase().includes('switch') || text.toLowerCase().includes('open')) {
+    chrome.runtime.sendMessage({ type: 'search', query: text }, res => {
+      hideTypingIndicator();
+      if (!res) { 
+        addMessage('No response from background.', 'ai'); 
+        return; 
+      }
+      if (!res.ok) { 
+        addMessage(`❌ Error: ${res.error}`, 'ai'); 
+        return; 
+      }
+      if (res.found) {
+        addMessage('✅ Found and activated matching tab!', 'ai');
+      } else if (res.candidates && res.candidates.length) {
+        addMessage(`🔍 No exact match. Similar tabs: ${res.candidates.map(c=>c.title).join(', ')}`, 'ai');
+      } else {
+        addMessage('❌ No matching tab found.', 'ai');
+      }
+    });
+    return;
+  }
+  
+  // Default: AI chat for general questions
+  chrome.runtime.sendMessage({ type: 'aiChat', query: text }, res => {
     hideTypingIndicator();
-    if (!res) { 
-      addMessage('No response from background.', 'ai'); 
-      return; 
+    if (res && res.ok) {
+      addMessage(res.response, 'ai');
+    } else {
+      addMessage(`🤖 ${res?.error || 'AI chat temporarily unavailable'}`, 'ai');
     }
-    if (!res.ok) { 
-      addMessage('Error: ' + res.error, 'ai'); 
-      return; 
-    }
-    if (res.found) addMessage('Activated matching tab.', 'ai');
-    else if (res.candidates && res.candidates.length)
-      addMessage('No exact match. Candidates: ' + res.candidates.map(c=>c.title).join(', '), 'ai');
-    else addMessage('No matching tab found.', 'ai');
   });
 });
 
