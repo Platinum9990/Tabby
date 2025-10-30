@@ -409,10 +409,10 @@ body {
 /* Light Theme */
 body.light-theme {
 	background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-	color: #1e3a8a;
+	color: #334155;
 }
 body.light-theme #root {
-	color: #1e3a8a;
+	color: #334155;
 }
 body.light-theme .title-gradient {
 	background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
@@ -421,10 +421,10 @@ body.light-theme .title-gradient {
 	background-clip: text;
 }
 body.light-theme .subtitle {
-	color: #3730a3;
+	color: #64748b;
 }
 body.light-theme .tabs-title {
-	color: #1e3a8a;
+	color: #1e293b;
 }
 body.light-theme .tabs-section,
 body.light-theme .chat-section {
@@ -435,7 +435,7 @@ body.light-theme .chat-section {
 body.light-theme .tab-item {
 	background: rgba(0,0,0,0.05);
 	border: 1px solid rgba(0,0,0,0.08);
-	color: #1e3a8a;
+	color: #334155;
 }
 body.light-theme .tab-item:hover {
 	background: rgba(0,0,0,0.1);
@@ -454,25 +454,25 @@ body.light-theme .chat-bubble.user {
 }
 body.light-theme .chat-bubble.ai {
 	background: rgba(0,0,0,0.05);
-	color: #1e3a8a;
+	color: #374151;
 }
 body.light-theme .chat-bubble.ai .message-time {
-	color: rgba(30, 58, 138, 0.6);
+	color: rgba(55, 65, 81, 0.6);
 }
 body.light-theme #chat-input,
 body.light-theme #tab-search {
 	background: rgba(0,0,0,0.05) !important;
-	color: #1e3a8a !important;
+	color: #374151 !important;
 	border: 1px solid rgba(0,0,0,0.1);
 }
 body.light-theme #chat-input:focus,
 body.light-theme #tab-search:focus {
-	color: #1e3a8a !important;
+	color: #374151 !important;
 	box-shadow: 0 0 0 2px #3b82f6;
 }
 body.light-theme #chat-input::placeholder,
 body.light-theme #tab-search::placeholder {
-	color: #3730a3 !important;
+	color: #9ca3af !important;
 }
 body.light-theme .collapse-btn,
 body.light-theme .action-btn,
