@@ -157,11 +157,12 @@ function renderTabs(searchQuery = '') {
       const activeId = activeTabs[0]?.id;
       
       // Filter tabs based on search query
-      const filteredTabs = tabs.filter(tab => 
-        !searchQuery || 
-        tab.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tab.url.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      const filteredTabs = tabs.filter(tab => {
+        if (!searchQuery || typeof searchQuery !== 'string') return true;
+        const query = searchQuery.toLowerCase();
+        return (tab.title && tab.title.toLowerCase().includes(query)) ||
+               (tab.url && tab.url.toLowerCase().includes(query));
+      });
       
       filteredTabs.forEach(tab => {
         const item = document.createElement('div');
@@ -397,11 +398,17 @@ chrome.runtime.sendMessage({ type: 'getAiCapabilities' }, res => {
       );
     } else {
       addMessageWithoutSaving(
-        '🤖 Hi! I\'m Tabby, your browsing assistant. Try commands like "find tab about..." or "reopen my last tab"',
+        '🤖 Hi! I\'m Tabby, your browsing assistant.\n\n✨ Chrome AI APIs are not yet available in your browser.\n\nFor now, try:\n• "find tab about..." \n• "reopen my last tab"\n• Basic tab management\n\n📋 Full AI features will activate when Chrome\'s built-in AI becomes available!',
         'ai',
         new Date()
       );
     }
+  } else {
+    addMessageWithoutSaving(
+      '🤖 Hi! I\'m Tabby, your browsing assistant. Basic tab management is ready to use!',
+      'ai',
+      new Date()
+    );
   }
 });
 

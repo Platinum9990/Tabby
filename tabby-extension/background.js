@@ -29,44 +29,60 @@ let aiCapabilities = {
 // Initialize AI capabilities on startup
 async function initializeAI() {
   try {
-    if (chrome.ai) {
+    if (typeof chrome !== 'undefined' && chrome.ai) {
       // Check Prompt API
       if (chrome.ai.canCreateTextSession) {
-        const availability = await chrome.ai.canCreateTextSession();
-        aiCapabilities.prompt = availability === 'readily';
+        try {
+          const availability = await chrome.ai.canCreateTextSession();
+          aiCapabilities.prompt = availability === 'readily';
+        } catch (e) {
+          console.log('Prompt API not available:', e.message);
+        }
       }
       
       // Check Summarizer API
       if (chrome.ai.summarizer && chrome.ai.summarizer.capabilities) {
-        const sumCapabilities = await chrome.ai.summarizer.capabilities();
-        aiCapabilities.summarizer = sumCapabilities.available === 'readily';
+        try {
+          const sumCapabilities = await chrome.ai.summarizer.capabilities();
+          aiCapabilities.summarizer = sumCapabilities.available === 'readily';
+        } catch (e) {
+          console.log('Summarizer API not available:', e.message);
+        }
       }
       
       // Check Writer API
       if (chrome.ai.writer && chrome.ai.writer.capabilities) {
-        const writerCapabilities = await chrome.ai.writer.capabilities();
-        aiCapabilities.writer = writerCapabilities.available === 'readily';
+        try {
+          const writerCapabilities = await chrome.ai.writer.capabilities();
+          aiCapabilities.writer = writerCapabilities.available === 'readily';
+        } catch (e) {
+          console.log('Writer API not available:', e.message);
+        }
       }
       
       // Check Rewriter API
       if (chrome.ai.rewriter && chrome.ai.rewriter.capabilities) {
-        const rewriterCapabilities = await chrome.ai.rewriter.capabilities();
-        aiCapabilities.rewriter = rewriterCapabilities.available === 'readily';
+        try {
+          const rewriterCapabilities = await chrome.ai.rewriter.capabilities();
+          aiCapabilities.rewriter = rewriterCapabilities.available === 'readily';
+        } catch (e) {
+          console.log('Rewriter API not available:', e.message);
+        }
       }
       
       // Check Translator API
       if (chrome.ai.translator && chrome.ai.translator.capabilities) {
-        const translatorCapabilities = await chrome.ai.translator.capabilities();
-        aiCapabilities.translator = translatorCapabilities.available === 'readily';
-      }
-      
-      // Check Proofreader API (if available)
-      if (chrome.ai.proofreader && chrome.ai.proofreader.capabilities) {
-        const proofreaderCapabilities = await chrome.ai.proofreader.capabilities();
-        aiCapabilities.proofreader = proofreaderCapabilities.available === 'readily';
+        try {
+          const translatorCapabilities = await chrome.ai.translator.capabilities();
+          aiCapabilities.translator = translatorCapabilities.available === 'readily';
+        } catch (e) {
+          console.log('Translator API not available:', e.message);
+        }
       }
       
       console.log('AI Capabilities initialized:', aiCapabilities);
+    } else {
+      console.log('Chrome AI APIs not available in this version. Using fallback functionality.');
     }
   } catch (error) {
     console.warn('Error initializing AI capabilities:', error);
