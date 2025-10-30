@@ -461,13 +461,18 @@ body.light-theme .chat-bubble.ai .message-time {
 }
 body.light-theme #chat-input,
 body.light-theme #tab-search {
-	background: rgba(0,0,0,0.05);
-	color: #1e3a8a;
+	background: rgba(0,0,0,0.05) !important;
+	color: #1e3a8a !important;
 	border: 1px solid rgba(0,0,0,0.1);
+}
+body.light-theme #chat-input:focus,
+body.light-theme #tab-search:focus {
+	color: #1e3a8a !important;
+	box-shadow: 0 0 0 2px #3b82f6;
 }
 body.light-theme #chat-input::placeholder,
 body.light-theme #tab-search::placeholder {
-	color: #3730a3;
+	color: #3730a3 !important;
 }
 body.light-theme .collapse-btn,
 body.light-theme .action-btn,
