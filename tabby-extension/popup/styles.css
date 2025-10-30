@@ -409,10 +409,10 @@ body {
 /* Light Theme */
 body.light-theme {
 	background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-	color: #1e293b;
+	color: #1e3a8a;
 }
 body.light-theme #root {
-	color: #1e293b;
+	color: #1e3a8a;
 }
 body.light-theme .title-gradient {
 	background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
@@ -421,7 +421,10 @@ body.light-theme .title-gradient {
 	background-clip: text;
 }
 body.light-theme .subtitle {
-	color: #64748b;
+	color: #3730a3;
+}
+body.light-theme .tabs-title {
+	color: #1e3a8a;
 }
 body.light-theme .tabs-section,
 body.light-theme .chat-section {
@@ -432,7 +435,7 @@ body.light-theme .chat-section {
 body.light-theme .tab-item {
 	background: rgba(0,0,0,0.05);
 	border: 1px solid rgba(0,0,0,0.08);
-	color: #1e293b;
+	color: #1e3a8a;
 }
 body.light-theme .tab-item:hover {
 	background: rgba(0,0,0,0.1);
@@ -451,17 +454,20 @@ body.light-theme .chat-bubble.user {
 }
 body.light-theme .chat-bubble.ai {
 	background: rgba(0,0,0,0.05);
-	color: #1e293b;
+	color: #1e3a8a;
+}
+body.light-theme .chat-bubble.ai .message-time {
+	color: rgba(30, 58, 138, 0.6);
 }
 body.light-theme #chat-input,
 body.light-theme #tab-search {
 	background: rgba(0,0,0,0.05);
-	color: #1e293b;
+	color: #1e3a8a;
 	border: 1px solid rgba(0,0,0,0.1);
 }
 body.light-theme #chat-input::placeholder,
 body.light-theme #tab-search::placeholder {
-	color: #64748b;
+	color: #3730a3;
 }
 body.light-theme .collapse-btn,
 body.light-theme .action-btn,
