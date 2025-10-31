@@ -355,6 +355,64 @@ function initTabSearch() {
       }
     });
   });
+
+  // Add to reading list
+  const addReadingBtn = document.getElementById('add-reading-list');
+  if (addReadingBtn) {
+    addReadingBtn.addEventListener('click', () => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+          chrome.runtime.sendMessage({ 
+            type: 'addToReadingList', 
+            url: tabs[0].url, 
+            title: tabs[0].title 
+          }, (response) => {
+            if (response && response.success) {
+              addMessage('📖 Added to reading list successfully!', 'ai');
+            } else {
+              addMessage('❌ Failed to add to reading list', 'ai');
+            }
+          });
+        }
+      });
+    });
+  }
+
+  // Smart bookmark
+  const smartBookmarkBtn = document.getElementById('smart-bookmark');
+  if (smartBookmarkBtn) {
+    smartBookmarkBtn.addEventListener('click', () => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+          chrome.runtime.sendMessage({ 
+            type: 'smartBookmark', 
+            url: tabs[0].url, 
+            title: tabs[0].title 
+          }, (response) => {
+            if (response && response.success) {
+              addMessage(`⭐ Smart bookmark created in "${response.folder}" folder!`, 'ai');
+            } else {
+              addMessage('❌ Failed to create smart bookmark', 'ai');
+            }
+          });
+        }
+      });
+    });
+  }
+
+  // Group similar tabs
+  const groupTabsBtn = document.getElementById('group-tabs');
+  if (groupTabsBtn) {
+    groupTabsBtn.addEventListener('click', () => {
+      chrome.runtime.sendMessage({ type: 'createTabGroup' }, (response) => {
+        if (response && response.success) {
+          addMessage(`📁 Created tab group: "${response.groupTitle}" with ${response.tabCount} tabs`, 'ai');
+        } else {
+          addMessage('❌ Failed to create tab group', 'ai');
+        }
+      });
+    });
+  }
 }
 
 initTabSearch();

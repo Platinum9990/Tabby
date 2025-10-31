@@ -11,7 +11,10 @@
     "notifications", 
     "activeTab", 
     "sessions",
-    "ai"
+    "ai",
+    "readingList",
+    "bookmarks",
+    "tabGroups"
   ],
   "host_permissions": ["<all_urls>"],
   

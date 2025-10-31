@@ -137,19 +137,23 @@ body {
 }
 .tab-actions {
 	display: flex;
-	gap: 4px;
+	gap: 3px;
+	flex-wrap: wrap;
+	justify-content: space-between;
 }
 .action-btn {
 	background: rgba(255,255,255,0.1);
 	border: none;
 	border-radius: 6px;
-	padding: 8px;
+	padding: 7px;
 	color: #6dd5ed;
 	cursor: pointer;
 	transition: all 0.2s ease;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	min-width: 32px;
+	flex: 1;
 }
 .action-btn:hover {
 	background: rgba(109, 213, 237, 0.2);

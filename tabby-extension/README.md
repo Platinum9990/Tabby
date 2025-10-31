@@ -13,6 +13,9 @@
 - **Auto Organization**: Categorize tabs into logical groups (Work, Social, Development, etc.)
 - **Tab Recovery**: Reopen recently closed tabs with smart matching
 - **Idle Tab Detection**: Automatic cleanup of unused tabs
+- **Visual Tab Grouping**: Organize similar tabs into color-coded groups
+- **Smart Bookmarking**: Automatically categorize bookmarks into organized folders
+- **Reading List Integration**: Save articles for later with one-click access
 
 ### 🤖 **AI-Powered Intelligence**
 - **Content Summarization**: Get key insights from any webpage
@@ -25,12 +28,16 @@
 - **Collapsible Sections**: Customizable interface layout
 - **Voice Input**: Speech-to-text for hands-free interaction
 - **Real-time Updates**: Live tab status and notifications
+- **Action Buttons**: Quick access to summarize, organize, bookmark, and group features
+- **One-Click Operations**: Add to reading list, smart bookmark, and tab grouping
 
 ### 🔧 **Technical Excellence**
 - **No External APIs**: All processing happens locally
 - **Privacy First**: No data sent to external servers
 - **Manifest V3**: Latest Chrome extension standards
 - **Offline Capable**: Full functionality without internet
+- **Chrome API Integration**: Native bookmarks, reading list, and tab groups
+- **Advanced Permissions**: Secure access to browser storage and sessions
 
 ## 🚀 Quick Start
 
