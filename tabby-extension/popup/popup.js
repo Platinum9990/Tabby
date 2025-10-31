@@ -355,62 +355,6 @@ function initTabSearch() {
       }
     });
   });
-
-  // Add to reading list
-  const addReadingBtn = document.getElementById('add-reading-list');
-  if (addReadingBtn) {
-    addReadingBtn.addEventListener('click', () => {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]) {
-          chrome.runtime.sendMessage({ 
-            type: 'addToReadingList', 
-            tabId: tabs[0].id
-          }, (response) => {
-            if (response && response.ok) {
-              addMessage('📖 Added to reading list successfully!', 'ai');
-            } else {
-              addMessage(`❌ Failed to add to reading list: ${response?.error || 'Unknown error'}`, 'ai');
-            }
-          });
-        }
-      });
-    });
-  }
-
-  // Smart bookmark
-  const smartBookmarkBtn = document.getElementById('smart-bookmark');
-  if (smartBookmarkBtn) {
-    smartBookmarkBtn.addEventListener('click', () => {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]) {
-          chrome.runtime.sendMessage({ 
-            type: 'smartBookmark', 
-            tabId: tabs[0].id
-          }, (response) => {
-            if (response && response.ok) {
-              addMessage(`⭐ Smart bookmark created in "${response.folder}" folder!`, 'ai');
-            } else {
-              addMessage(`❌ Failed to create smart bookmark: ${response?.error || 'Unknown error'}`, 'ai');
-            }
-          });
-        }
-      });
-    });
-  }
-
-  // Group similar tabs
-  const groupTabsBtn = document.getElementById('group-tabs');
-  if (groupTabsBtn) {
-    groupTabsBtn.addEventListener('click', () => {
-      chrome.runtime.sendMessage({ type: 'createTabGroup' }, (response) => {
-        if (response && response.ok) {
-          addMessage(`📁 Created tab group: "${response.groupTitle || 'AI Organized'}" with ${response.tabCount} tabs`, 'ai');
-        } else {
-          addMessage(`❌ Failed to create tab group: ${response?.error || 'Unknown error'}`, 'ai');
-        }
-      });
-    });
-  }
 }
 
 initTabSearch();

@@ -436,7 +436,7 @@ chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) =
 
 // Message handling from popup/content scripts
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  console.log('🔍 DEBUG: Message handler triggered for:', msg.type);
+  console.log('� Processing message:', msg.type);
   
   // Handle messages synchronously to avoid async issues
   try {
@@ -451,8 +451,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 // Separate async message handler function
 async function handleMessage(msg, sender, sendResponse) {
-  console.log('🔍 DEBUG: Processing message type:', msg.type);
-  
   try {
     // --- New AI-Enhanced Commands ---
     if (msg.type === 'aiChat') {
@@ -569,218 +567,7 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
       }
 
     } else if (msg.type === 'getAiCapabilities') {
-      console.log('✅ DEBUG: Processing getAiCapabilities');
       sendResponse({ ok: true, capabilities: aiCapabilities });
-
-    } else if (msg.type === 'addToReadingList') {
-      console.log('✅ DEBUG: Processing addToReadingList');
-      console.log('Received addToReadingList message:', msg.tabId);
-      try {
-        const tabId = msg.tabId || (await chrome.tabs.query({active: true, currentWindow: true}))[0]?.id;
-        if (!tabId) {
-          sendResponse({ ok: false, error: 'No active tab found' });
-          return;
-        }
-        
-        const tab = await chrome.tabs.get(tabId);
-        
-        // Check if Reading List API is available
-        if (chrome.readingList && typeof chrome.readingList.addEntry === 'function') {
-          try {
-            await chrome.readingList.addEntry({
-              title: tab.title,
-              url: tab.url,
-              hasBeenRead: false
-            });
-            sendResponse({ ok: true, message: `Added "${tab.title}" to Reading List` });
-          } catch (apiError) {
-            console.warn('Reading List API failed, using fallback:', apiError);
-            // Fall through to local storage fallback
-          }
-        }
-        
-        // Fallback: save to local storage
-        const readingList = await chrome.storage.local.get(['readingList']);
-        const entries = readingList.readingList || [];
-        
-        // Check for duplicates
-        const exists = entries.some(entry => entry.url === tab.url);
-        if (exists) {
-          sendResponse({ ok: true, message: `"${tab.title}" is already in your reading list` });
-          return;
-        }
-        
-        entries.unshift({
-          title: tab.title,
-          url: tab.url,
-          addedAt: Date.now(),
-          hasBeenRead: false,
-          favicon: tab.favIconUrl
-        });
-        
-        if (entries.length > 50) entries.pop(); // Limit to 50 items
-        await chrome.storage.local.set({ readingList: entries });
-        sendResponse({ ok: true, message: `Added "${tab.title}" to Reading List` });
-        
-      } catch (err) {
-        console.error('Add to reading list failed:', err);
-        sendResponse({ ok: false, error: `Failed to add to reading list: ${err.message}` });
-      }
-
-    } else if (msg.type === 'smartBookmark') {
-      console.log('✅ DEBUG: Processing smartBookmark');
-      console.log('Received smartBookmark message:', msg.tabId);
-      try {
-        const tabId = msg.tabId || (await chrome.tabs.query({active: true, currentWindow: true}))[0]?.id;
-        if (!tabId) {
-          sendResponse({ ok: false, error: 'No active tab found' });
-          return;
-        }
-        
-        const tab = await chrome.tabs.get(tabId);
-        
-        if (chrome.bookmarks && typeof chrome.bookmarks.create === 'function') {
-          // Find or create AI-organized folder
-          const bookmarks = await chrome.bookmarks.search({title: "TabSense AI"});
-          let folderId;
-          
-          if (bookmarks.length === 0) {
-            const folder = await chrome.bookmarks.create({
-              title: "TabSense AI",
-              parentId: "1" // Bookmarks bar
-            });
-            folderId = folder.id;
-          } else {
-            folderId = bookmarks[0].id;
-          }
-          
-          // Create category subfolder based on tab content
-          const category = categorizeTab(tab, getDomain(tab.url));
-          const categoryFolders = await chrome.bookmarks.search({title: category});
-          let categoryFolderId = folderId;
-          
-          if (categoryFolders.length === 0) {
-            const categoryFolder = await chrome.bookmarks.create({
-              title: category,
-              parentId: folderId
-            });
-            categoryFolderId = categoryFolder.id;
-          } else {
-            categoryFolderId = categoryFolders.find(f => f.parentId === folderId)?.id || folderId;
-          }
-          
-          await chrome.bookmarks.create({
-            title: tab.title,
-            url: tab.url,
-            parentId: categoryFolderId
-          });
-          
-          sendResponse({ ok: true, message: `Bookmarked "${tab.title}" in ${category}`, folder: category });
-        } else {
-          sendResponse({ ok: false, error: 'Bookmarks API not available' });
-        }
-      } catch (err) {
-        console.error('Smart bookmark failed:', err);
-        sendResponse({ ok: false, error: `Bookmark failed: ${err.message}` });
-      }
-
-    } else if (msg.type === 'createTabGroup') {
-      console.log('✅ DEBUG: Processing createTabGroup');
-      console.log('Received createTabGroup message:', msg.category);
-      try {
-        // Check if Tab Groups API is available
-        if (!chrome.tabGroups || typeof chrome.tabs.group !== 'function') {
-          sendResponse({ ok: false, error: 'Tab Groups API not available in this Chrome version' });
-          return;
-        }
-        
-        const tabs = await chrome.tabs.query({ currentWindow: true });
-        
-        // If specific category provided, filter by it
-        if (msg.category) {
-          const matchingTabs = tabs.filter(tab => {
-            const tabCategory = categorizeTab(tab, getDomain(tab.url));
-            return tabCategory === msg.category;
-          });
-          
-          if (matchingTabs.length === 0) {
-            sendResponse({ ok: false, error: `No tabs found for category: ${msg.category}` });
-            return;
-          }
-          
-          const tabIds = matchingTabs.map(tab => tab.id);
-          const group = await chrome.tabs.group({ tabIds });
-          
-          const colors = ['blue', 'green', 'yellow', 'orange', 'red', 'purple', 'pink', 'cyan'];
-          const color = colors[Math.floor(Math.random() * colors.length)];
-          
-          await chrome.tabGroups.update(group, {
-            title: `🤖 ${msg.category}`,
-            color: color,
-            collapsed: false
-          });
-          
-          sendResponse({ 
-            ok: true, 
-            message: `Created group "${msg.category}" with ${tabIds.length} tabs`,
-            groupId: group,
-            tabCount: tabIds.length,
-            groupTitle: msg.category
-          });
-          
-        } else {
-          // Auto-group by domain similarity
-          const domainGroups = new Map();
-          
-          tabs.forEach(tab => {
-            const domain = getDomain(tab.url);
-            if (!domain || domain === 'unknown' || tab.url.startsWith('chrome://')) return;
-            
-            if (!domainGroups.has(domain)) {
-              domainGroups.set(domain, []);
-            }
-            domainGroups.get(domain).push(tab.id);
-          });
-          
-          // Find domains with multiple tabs
-          const groupsToCreate = Array.from(domainGroups.entries())
-            .filter(([domain, tabIds]) => tabIds.length > 1)
-            .slice(0, 3); // Limit to 3 groups to avoid overwhelming
-          
-          if (groupsToCreate.length === 0) {
-            sendResponse({ ok: false, error: 'No similar tabs found to group' });
-            return;
-          }
-          
-          let totalTabsGrouped = 0;
-          const colors = ['blue', 'green', 'yellow', 'orange', 'red', 'purple', 'pink', 'cyan'];
-          
-          for (const [domain, tabIds] of groupsToCreate) {
-            const group = await chrome.tabs.group({ tabIds });
-            const color = colors[Math.floor(Math.random() * colors.length)];
-            
-            await chrome.tabGroups.update(group, {
-              title: `📁 ${domain}`,
-              color: color,
-              collapsed: false
-            });
-            
-            totalTabsGrouped += tabIds.length;
-          }
-          
-          sendResponse({ 
-            ok: true, 
-            message: `Created ${groupsToCreate.length} tab groups with ${totalTabsGrouped} tabs`,
-            groupCount: groupsToCreate.length,
-            tabCount: totalTabsGrouped,
-            groupTitle: `${groupsToCreate.length} groups`
-          });
-        }
-        
-      } catch (err) {
-        console.error('Create tab group failed:', err);
-        sendResponse({ ok: false, error: `Tab grouping failed: ${err.message}` });
-      }
 
     } else if (msg.type === 'search') {
       console.log('Received search message:', msg.query);
@@ -1038,4 +825,4 @@ function categorizeTab(tab, domain) {
   return baseDomain.charAt(0).toUpperCase() + baseDomain.slice(1);
 }
 
-console.log("🚀 Tabby background service worker started - Version 2.1"); // Log startup
+console.log("🚀 Tabby background service worker started - Clean Version"); // Log startup
