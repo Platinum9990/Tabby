@@ -364,13 +364,12 @@ function initTabSearch() {
         if (tabs[0]) {
           chrome.runtime.sendMessage({ 
             type: 'addToReadingList', 
-            url: tabs[0].url, 
-            title: tabs[0].title 
+            tabId: tabs[0].id
           }, (response) => {
-            if (response && response.success) {
+            if (response && response.ok) {
               addMessage('📖 Added to reading list successfully!', 'ai');
             } else {
-              addMessage('❌ Failed to add to reading list', 'ai');
+              addMessage(`❌ Failed to add to reading list: ${response?.error || 'Unknown error'}`, 'ai');
             }
           });
         }
@@ -386,13 +385,12 @@ function initTabSearch() {
         if (tabs[0]) {
           chrome.runtime.sendMessage({ 
             type: 'smartBookmark', 
-            url: tabs[0].url, 
-            title: tabs[0].title 
+            tabId: tabs[0].id
           }, (response) => {
-            if (response && response.success) {
+            if (response && response.ok) {
               addMessage(`⭐ Smart bookmark created in "${response.folder}" folder!`, 'ai');
             } else {
-              addMessage('❌ Failed to create smart bookmark', 'ai');
+              addMessage(`❌ Failed to create smart bookmark: ${response?.error || 'Unknown error'}`, 'ai');
             }
           });
         }
@@ -405,10 +403,10 @@ function initTabSearch() {
   if (groupTabsBtn) {
     groupTabsBtn.addEventListener('click', () => {
       chrome.runtime.sendMessage({ type: 'createTabGroup' }, (response) => {
-        if (response && response.success) {
-          addMessage(`📁 Created tab group: "${response.groupTitle}" with ${response.tabCount} tabs`, 'ai');
+        if (response && response.ok) {
+          addMessage(`📁 Created tab group: "${response.groupTitle || 'AI Organized'}" with ${response.tabCount} tabs`, 'ai');
         } else {
-          addMessage('❌ Failed to create tab group', 'ai');
+          addMessage(`❌ Failed to create tab group: ${response?.error || 'Unknown error'}`, 'ai');
         }
       });
     });

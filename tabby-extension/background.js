@@ -558,29 +558,51 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
       console.log('Received addToReadingList message:', msg.tabId);
       try {
         const tabId = msg.tabId || (await chrome.tabs.query({active: true, currentWindow: true}))[0]?.id;
+        if (!tabId) {
+          sendResponse({ ok: false, error: 'No active tab found' });
+          return;
+        }
+        
         const tab = await chrome.tabs.get(tabId);
         
-        if (chrome.readingList) {
-          await chrome.readingList.addEntry({
-            title: tab.title,
-            url: tab.url,
-            hasBeenRead: false
-          });
-          sendResponse({ ok: true, message: `Added "${tab.title}" to Reading List` });
-        } else {
-          // Fallback: save to local storage
-          const readingList = await chrome.storage.local.get(['readingList']);
-          const entries = readingList.readingList || [];
-          entries.unshift({
-            title: tab.title,
-            url: tab.url,
-            addedAt: Date.now(),
-            hasBeenRead: false
-          });
-          if (entries.length > 50) entries.pop(); // Limit to 50 items
-          await chrome.storage.local.set({ readingList: entries });
-          sendResponse({ ok: true, message: `Added "${tab.title}" to Reading List (local)` });
+        // Check if Reading List API is available
+        if (chrome.readingList && typeof chrome.readingList.addEntry === 'function') {
+          try {
+            await chrome.readingList.addEntry({
+              title: tab.title,
+              url: tab.url,
+              hasBeenRead: false
+            });
+            sendResponse({ ok: true, message: `Added "${tab.title}" to Reading List` });
+          } catch (apiError) {
+            console.warn('Reading List API failed, using fallback:', apiError);
+            // Fall through to local storage fallback
+          }
         }
+        
+        // Fallback: save to local storage
+        const readingList = await chrome.storage.local.get(['readingList']);
+        const entries = readingList.readingList || [];
+        
+        // Check for duplicates
+        const exists = entries.some(entry => entry.url === tab.url);
+        if (exists) {
+          sendResponse({ ok: true, message: `"${tab.title}" is already in your reading list` });
+          return;
+        }
+        
+        entries.unshift({
+          title: tab.title,
+          url: tab.url,
+          addedAt: Date.now(),
+          hasBeenRead: false,
+          favicon: tab.favIconUrl
+        });
+        
+        if (entries.length > 50) entries.pop(); // Limit to 50 items
+        await chrome.storage.local.set({ readingList: entries });
+        sendResponse({ ok: true, message: `Added "${tab.title}" to Reading List` });
+        
       } catch (err) {
         console.error('Add to reading list failed:', err);
         sendResponse({ ok: false, error: `Failed to add to reading list: ${err.message}` });
@@ -590,9 +612,14 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
       console.log('Received smartBookmark message:', msg.tabId);
       try {
         const tabId = msg.tabId || (await chrome.tabs.query({active: true, currentWindow: true}))[0]?.id;
+        if (!tabId) {
+          sendResponse({ ok: false, error: 'No active tab found' });
+          return;
+        }
+        
         const tab = await chrome.tabs.get(tabId);
         
-        if (chrome.bookmarks) {
+        if (chrome.bookmarks && typeof chrome.bookmarks.create === 'function') {
           // Find or create AI-organized folder
           const bookmarks = await chrome.bookmarks.search({title: "TabSense AI"});
           let folderId;
@@ -628,7 +655,7 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
             parentId: categoryFolderId
           });
           
-          sendResponse({ ok: true, message: `Bookmarked "${tab.title}" in ${category}` });
+          sendResponse({ ok: true, message: `Bookmarked "${tab.title}" in ${category}`, folder: category });
         } else {
           sendResponse({ ok: false, error: 'Bookmarks API not available' });
         }
@@ -640,45 +667,95 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
     } else if (msg.type === 'createTabGroup') {
       console.log('Received createTabGroup message:', msg.category);
       try {
-        if (!chrome.tabGroups) {
-          sendResponse({ ok: false, error: 'Tab Groups API not available' });
+        // Check if Tab Groups API is available
+        if (!chrome.tabGroups || typeof chrome.tabs.group !== 'function') {
+          sendResponse({ ok: false, error: 'Tab Groups API not available in this Chrome version' });
           return;
         }
         
-        const category = msg.category || 'AI Organized';
-        const tabs = await chrome.tabs.query({});
+        const tabs = await chrome.tabs.query({ currentWindow: true });
         
-        // Find tabs matching the category
-        const matchingTabs = tabs.filter(tab => {
-          const tabCategory = categorizeTab(tab, getDomain(tab.url));
-          return tabCategory === category;
-        });
-        
-        if (matchingTabs.length === 0) {
-          sendResponse({ ok: false, error: `No tabs found for category: ${category}` });
-          return;
+        // If specific category provided, filter by it
+        if (msg.category) {
+          const matchingTabs = tabs.filter(tab => {
+            const tabCategory = categorizeTab(tab, getDomain(tab.url));
+            return tabCategory === msg.category;
+          });
+          
+          if (matchingTabs.length === 0) {
+            sendResponse({ ok: false, error: `No tabs found for category: ${msg.category}` });
+            return;
+          }
+          
+          const tabIds = matchingTabs.map(tab => tab.id);
+          const group = await chrome.tabs.group({ tabIds });
+          
+          const colors = ['blue', 'green', 'yellow', 'orange', 'red', 'purple', 'pink', 'cyan'];
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          
+          await chrome.tabGroups.update(group, {
+            title: `🤖 ${msg.category}`,
+            color: color,
+            collapsed: false
+          });
+          
+          sendResponse({ 
+            ok: true, 
+            message: `Created group "${msg.category}" with ${tabIds.length} tabs`,
+            groupId: group,
+            tabCount: tabIds.length,
+            groupTitle: msg.category
+          });
+          
+        } else {
+          // Auto-group by domain similarity
+          const domainGroups = new Map();
+          
+          tabs.forEach(tab => {
+            const domain = getDomain(tab.url);
+            if (!domain || domain === 'unknown' || tab.url.startsWith('chrome://')) return;
+            
+            if (!domainGroups.has(domain)) {
+              domainGroups.set(domain, []);
+            }
+            domainGroups.get(domain).push(tab.id);
+          });
+          
+          // Find domains with multiple tabs
+          const groupsToCreate = Array.from(domainGroups.entries())
+            .filter(([domain, tabIds]) => tabIds.length > 1)
+            .slice(0, 3); // Limit to 3 groups to avoid overwhelming
+          
+          if (groupsToCreate.length === 0) {
+            sendResponse({ ok: false, error: 'No similar tabs found to group' });
+            return;
+          }
+          
+          let totalTabsGrouped = 0;
+          const colors = ['blue', 'green', 'yellow', 'orange', 'red', 'purple', 'pink', 'cyan'];
+          
+          for (const [domain, tabIds] of groupsToCreate) {
+            const group = await chrome.tabs.group({ tabIds });
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            await chrome.tabGroups.update(group, {
+              title: `📁 ${domain}`,
+              color: color,
+              collapsed: false
+            });
+            
+            totalTabsGrouped += tabIds.length;
+          }
+          
+          sendResponse({ 
+            ok: true, 
+            message: `Created ${groupsToCreate.length} tab groups with ${totalTabsGrouped} tabs`,
+            groupCount: groupsToCreate.length,
+            tabCount: totalTabsGrouped,
+            groupTitle: `${groupsToCreate.length} groups`
+          });
         }
         
-        // Group the tabs
-        const tabIds = matchingTabs.map(tab => tab.id);
-        const group = await chrome.tabs.group({ tabIds });
-        
-        // Set group properties
-        const colors = ['blue', 'green', 'yellow', 'orange', 'red', 'purple', 'pink', 'cyan'];
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        
-        await chrome.tabGroups.update(group, {
-          title: `🤖 ${category}`,
-          color: color,
-          collapsed: false
-        });
-        
-        sendResponse({ 
-          ok: true, 
-          message: `Created group "${category}" with ${tabIds.length} tabs`,
-          groupId: group,
-          tabCount: tabIds.length
-        });
       } catch (err) {
         console.error('Create tab group failed:', err);
         sendResponse({ ok: false, error: `Tab grouping failed: ${err.message}` });
