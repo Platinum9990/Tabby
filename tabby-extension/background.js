@@ -436,9 +436,24 @@ chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) =
 
 // Message handling from popup/content scripts
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  (async () => {
-    console.log('🔍 DEBUG: Received message type:', msg.type);
-    
+  console.log('🔍 DEBUG: Message handler triggered for:', msg.type);
+  
+  // Handle messages synchronously to avoid async issues
+  try {
+    handleMessage(msg, sender, sendResponse);
+  } catch (err) {
+    console.error('❌ Message handler error:', err);
+    sendResponse({ ok: false, error: `Handler error: ${err.message}` });
+  }
+  
+  return true; // Indicate async response
+});
+
+// Separate async message handler function
+async function handleMessage(msg, sender, sendResponse) {
+  console.log('🔍 DEBUG: Processing message type:', msg.type);
+  
+  try {
     // --- New AI-Enhanced Commands ---
     if (msg.type === 'aiChat') {
       console.log('Received aiChat message:', msg.query);
@@ -929,11 +944,13 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
        }
     } else {
        console.log('Received unknown message type:', msg.type);
-       sendResponse({ ok: false, error: `Unknown message type: ${msg.type}` }); // Respond for unknown types
+       sendResponse({ ok: false, error: `Unknown message type: ${msg.type}` });
     }
-  })(); // Immediately invoke async function
-  return true; // Indicate async response for all handlers that might be async
-});
+  } catch (err) {
+    console.error('❌ Global message handler error:', err);
+    sendResponse({ ok: false, error: `Handler error: ${err.message}` });
+  }
+}
 
 // Smart tab organization without AI
 function organizeTabsSmart(tabs) {
