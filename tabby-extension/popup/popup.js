@@ -472,7 +472,7 @@ chrome.runtime.sendMessage({ type: 'getAiCapabilities' }, res => {
       );
     } else {
       addMessageWithoutSaving(
-        '🤖 Hi! I\'m Tabby, your browsing assistant.\n\n✨ Chrome AI APIs are not yet available in your browser.\n\nFor now, try:\n• "find tab about..." \n• "reopen my last tab"\n• Basic tab management\n\n📋 Full AI features will activate when Chrome\'s built-in AI becomes available!',
+        '🤖 Hi! I\'m Tabby, your browsing assistant.\n\n✨ Chrome AI APIs are not yet available in your browser.\n\nFor now, try:\n• "find tab about..." \n• "close tab about..."\n• "reopen my last tab"\n• Basic tab management\n\n📋 Full AI features will activate when Chrome\'s built-in AI becomes available!',
         'ai',
         new Date()
       );
@@ -532,6 +532,47 @@ chatSend.addEventListener('click', () => {
         addMessage(response, 'ai');
       } else {
         addMessage(`🤔 ${res?.error || 'Could not organize tabs'}`, 'ai');
+      }
+    });
+    return;
+  }
+  
+  // Check for close tab intent
+  const closeMatch = text.match(/close (the )?(tab|window) (about |with |containing |for )?(.+)/i) ||
+                     text.match(/close (.+) tab/i) ||
+                     text.match(/close (.+)/i);
+  
+  if (text.toLowerCase().includes('close') && (text.toLowerCase().includes('tab') || closeMatch)) {
+    // Extract what tab to close
+    let query = '';
+    if (closeMatch) {
+      // Extract the target from the match
+      if (closeMatch[4]) {
+        query = closeMatch[4]; // "close tab about [query]"
+      } else if (closeMatch[1] && !['the', 'tab', 'window'].includes(closeMatch[1].toLowerCase())) {
+        query = closeMatch[1]; // "close [query] tab" or "close [query]"
+      }
+    }
+    
+    // Special handling for "close this tab" or "close current tab"
+    if (text.toLowerCase().includes('this tab') || text.toLowerCase().includes('current tab')) {
+      query = '';
+    }
+    
+    chrome.runtime.sendMessage({ type: 'closeTab', query }, res => {
+      hideTypingIndicator();
+      if (!res) { 
+        addMessage('No response from background.', 'ai'); 
+        return; 
+      }
+      if (res.ok && res.closed) {
+        addMessage(`✅ Closed tab: ${res.closed.title}`, 'ai');
+        // Update the tabs list
+        renderTabs();
+      } else if (res.candidates && res.candidates.length) {
+        addMessage(`🔍 No exact match to close. Similar tabs: ${res.candidates.map(c=>c.title).join(', ')}`, 'ai');
+      } else {
+        addMessage(`❌ ${res.error || 'Could not find tab to close'}`, 'ai');
       }
     });
     return;
@@ -608,6 +649,8 @@ function getBasicResponse(text) {
     return `🤖 Here's what I can do:
 
 • "find tab about [topic]" - Search for tabs
+• "close tab about [topic]" - Close specific tabs
+• "close this tab" - Close current tab
 • "reopen my last tab" - Restore closed tabs  
 • "close all tabs" - Bulk close tabs
 • Use the search box to filter tabs
@@ -624,7 +667,7 @@ function getBasicResponse(text) {
   }
   
   if (lower.includes('close') || lower.includes('cleanup')) {
-    return '🧹 To clean up tabs: Use the ❌ button next to "Close all tabs", or click the X on individual tabs above.';
+    return '🧹 To close tabs:\n• Say "close tab about [topic]" to close specific tabs\n• Say "close this tab" to close current tab\n• Use the ❌ button next to "Close all tabs" for bulk closing\n• Click the X on individual tabs above';
   }
   
   if (lower.includes('search') || lower.includes('find')) {

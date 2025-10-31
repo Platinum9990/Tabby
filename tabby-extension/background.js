@@ -569,6 +569,92 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
     } else if (msg.type === 'getAiCapabilities') {
       sendResponse({ ok: true, capabilities: aiCapabilities });
 
+    } else if (msg.type === 'closeTab') {
+      console.log('Received closeTab message:', msg.query);
+      try {
+        // Smart tab finding and closing
+        const query = msg.query ? msg.query.toLowerCase() : '';
+        const tabs = await chrome.tabs.query({});
+        
+        if (!query) {
+          // Close current active tab if no query specified
+          const activeTab = await chrome.tabs.query({active: true, currentWindow: true});
+          if (activeTab[0]) {
+            await chrome.tabs.remove(activeTab[0].id);
+            sendResponse({ ok: true, closed: { title: activeTab[0].title, id: activeTab[0].id } });
+          } else {
+            sendResponse({ ok: false, error: 'No active tab to close.' });
+          }
+          return;
+        }
+        
+        // Find tab to close based on query
+        let bestMatch = null;
+        let bestScore = 0;
+        let candidates = [];
+        
+        for (const tab of tabs) {
+          let score = 0;
+          const title = (tab.title || '').toLowerCase();
+          const url = (tab.url || '').toLowerCase();
+          const domain = new URL(tab.url).hostname.toLowerCase();
+          
+          // Direct keyword matching
+          if (title.includes(query) || url.includes(query)) {
+            score += 10;
+          }
+          
+          // Domain matching
+          if (domain.includes(query)) {
+            score += 8;
+          }
+          
+          // Fuzzy matching for common terms
+          const keywords = query.split(' ');
+          keywords.forEach(keyword => {
+            if (title.includes(keyword)) score += 3;
+            if (url.includes(keyword)) score += 2;
+            if (domain.includes(keyword)) score += 4;
+          });
+          
+          // Common site patterns
+          if (query.includes('mail') && (domain.includes('gmail') || domain.includes('outlook'))) score += 15;
+          if (query.includes('video') && (domain.includes('youtube') || domain.includes('netflix'))) score += 15;
+          if (query.includes('social') && (domain.includes('facebook') || domain.includes('twitter') || domain.includes('linkedin'))) score += 15;
+          if (query.includes('code') && (domain.includes('github') || domain.includes('stackoverflow'))) score += 15;
+          if (query.includes('doc') && (domain.includes('docs.google') || domain.includes('notion'))) score += 15;
+          
+          if (score > 0) {
+            candidates.push({ tab, score, title: tab.title });
+            if (score > bestScore) {
+              bestScore = score;
+              bestMatch = tab;
+            }
+          }
+        }
+        
+        if (bestMatch && bestScore >= 3) {
+          // Don't close the extension's own tab
+          const currentTab = await chrome.tabs.query({active: true, currentWindow: true});
+          if (currentTab[0] && bestMatch.id === currentTab[0].id && bestMatch.url.includes('chrome-extension://')) {
+            sendResponse({ ok: false, error: 'Cannot close the extension popup tab.' });
+            return;
+          }
+          
+          console.log(`Closing tab: ${bestMatch.title} (score: ${bestScore})`);
+          await chrome.tabs.remove(bestMatch.id);
+          sendResponse({ ok: true, closed: { title: bestMatch.title, id: bestMatch.id } });
+        } else {
+          console.log('No good tab match found to close');
+          const candidateList = candidates.slice(0, 3).map(c => ({ title: c.title, score: c.score }));
+          sendResponse({ ok: true, found: false, candidates: candidateList, message: "No matching tab found to close." });
+        }
+        
+      } catch (err) {
+        console.error('Tab closing failed:', err);
+        sendResponse({ ok: false, error: `Failed to close tab: ${err.message}` });
+      }
+
     } else if (msg.type === 'search') {
       console.log('Received search message:', msg.query);
       try {
