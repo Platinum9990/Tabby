@@ -1,0 +1,61 @@
+{
+  "name": "tabsense-ai",
+  "version": "0.2.0",
+  "description": "Intelligent Chrome extension for smart tab management using AI and advanced algorithms",
+  "main": "background.js",
+  "scripts": {
+    "test": "echo \"Use Chrome Extensions Developer Tools for testing\"",
+    "lint": "echo \"Run ESLint when available\"",
+    "build": "echo \"No build process required - load directly in Chrome\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Platinum9990/Tabby.git"
+  },
+  "keywords": [
+    "chrome-extension",
+    "ai",
+    "tab-management",
+    "browser-assistant",
+    "productivity",
+    "machine-learning",
+    "intelligent-browsing",
+    "manifest-v3"
+  ],
+  "author": "TabSense AI Team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Platinum9990/Tabby/issues"
+  },
+  "homepage": "https://github.com/Platinum9990/Tabby#readme",
+  "engines": {
+    "chrome": ">=88.0.0"
+  },
+  "chrome-extension": {
+    "manifest_version": 3,
+    "permissions": [
+      "tabs",
+      "storage",
+      "scripting",
+      "alarms",
+      "notifications",
+      "sessions"
+    ],
+    "ai-features": [
+      "prompt-api",
+      "summarizer-api",
+      "writer-api",
+      "rewriter-api",
+      "translator-api"
+    ]
+  },
+  "devDependencies": {},
+  "dependencies": {},
+  "browserslist": [
+    "Chrome >= 88"
+  ],
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/Platinum9990"
+  }
+}

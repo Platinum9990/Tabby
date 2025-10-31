@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrome AI API Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background: #f8f9fa;
+        }
+        .available { background: #d4edda; color: #155724; }
+        .unavailable { background: #f8d7da; color: #721c24; }
+        .status-icon { font-size: 18px; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover { background: #0056b3; }
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background: #f8f9fa;
+            white-space: pre-wrap;
+        }
+        .instructions {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Chrome AI API Test Page</h1>
+        
+        <div class="instructions">
+            <h3>📋 Instructions:</h3>
+            <p><strong>To enable Chrome AI APIs:</strong></p>
+            <ol>
+                <li>Open <code>chrome://flags/</code> in Chrome Canary or Dev</li>
+                <li>Enable: <strong>Prompt API for Gemini Nano</strong></li>
+                <li>Enable: <strong>Summarization API for Gemini Nano</strong></li>
+                <li>Enable: <strong>Writer API for Gemini Nano</strong></li>
+                <li>Enable: <strong>Rewriter API for Gemini Nano</strong></li>
+                <li>Enable: <strong>Translation API for Gemini Nano</strong></li>
+                <li>Restart Chrome and reload this page</li>
+            </ol>
+        </div>
+
+        <h2>API Availability Status</h2>
+        <div id="status-list">
+            <div class="status-item" id="chrome-ai">
+                <span>Chrome AI Object</span>
+                <span class="status-icon">🔄</span>
+            </div>
+            <div class="status-item" id="prompt-api">
+                <span>Prompt API</span>
+                <span class="status-icon">🔄</span>
+            </div>
+            <div class="status-item" id="summarizer-api">
+                <span>Summarizer API</span>
+                <span class="status-icon">🔄</span>
+            </div>
+            <div class="status-item" id="writer-api">
+                <span>Writer API</span>
+                <span class="status-icon">🔄</span>
+            </div>
+            <div class="status-item" id="rewriter-api">
+                <span>Rewriter API</span>
+                <span class="status-icon">🔄</span>
+            </div>
+            <div class="status-item" id="translator-api">
+                <span>Translator API</span>
+                <span class="status-icon">🔄</span>
+            </div>
+        </div>
+
+        <div>
+            <button onclick="checkAPIs()">🔍 Check APIs</button>
+            <button onclick="testPrompt()">💬 Test Prompt</button>
+            <button onclick="testSummarizer()">📄 Test Summarizer</button>
+            <button onclick="copyStatus()">📋 Copy Status</button>
+        </div>
+
+        <div id="test-results" class="test-results" style="display: none;">
+            <h3>Test Results:</h3>
+            <div id="results-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let apiStatus = {};
+
+        async function checkAPIs() {
+            const resultsDiv = document.getElementById('results-content');
+            resultsDiv.textContent = 'Checking APIs...\n';
+            document.getElementById('test-results').style.display = 'block';
+
+            // Check Chrome AI object
+            const chromeAI = typeof chrome !== 'undefined' && !!chrome.ai;
+            updateStatus('chrome-ai', chromeAI);
+            apiStatus.chromeAI = chromeAI;
+
+            if (!chromeAI) {
+                resultsDiv.textContent += 'Chrome AI object not available. Make sure you\'re using Chrome Canary/Dev with experimental flags enabled.\n';
+                return;
+            }
+
+            try {
+                // Check Prompt API
+                if (chrome.ai.canCreateTextSession) {
+                    const promptAvail = await chrome.ai.canCreateTextSession();
+                    const promptReady = promptAvail === 'readily';
+                    updateStatus('prompt-api', promptReady);
+                    apiStatus.prompt = promptReady;
+                    resultsDiv.textContent += `Prompt API: ${promptAvail}\n`;
+                } else {
+                    updateStatus('prompt-api', false);
+                    resultsDiv.textContent += 'Prompt API: Not available\n';
+                }
+
+                // Check Summarizer API
+                if (chrome.ai.summarizer?.capabilities) {
+                    const sumCaps = await chrome.ai.summarizer.capabilities();
+                    const sumReady = sumCaps.available === 'readily';
+                    updateStatus('summarizer-api', sumReady);
+                    apiStatus.summarizer = sumReady;
+                    resultsDiv.textContent += `Summarizer API: ${sumCaps.available}\n`;
+                } else {
+                    updateStatus('summarizer-api', false);
+                    resultsDiv.textContent += 'Summarizer API: Not available\n';
+                }
+
+                // Check Writer API
+                if (chrome.ai.writer?.capabilities) {
+                    const writerCaps = await chrome.ai.writer.capabilities();
+                    const writerReady = writerCaps.available === 'readily';
+                    updateStatus('writer-api', writerReady);
+                    apiStatus.writer = writerReady;
+                    resultsDiv.textContent += `Writer API: ${writerCaps.available}\n`;
+                } else {
+                    updateStatus('writer-api', false);
+                    resultsDiv.textContent += 'Writer API: Not available\n';
+                }
+
+                // Check Rewriter API
+                if (chrome.ai.rewriter?.capabilities) {
+                    const rewriterCaps = await chrome.ai.rewriter.capabilities();
+                    const rewriterReady = rewriterCaps.available === 'readily';
+                    updateStatus('rewriter-api', rewriterReady);
+                    apiStatus.rewriter = rewriterReady;
+                    resultsDiv.textContent += `Rewriter API: ${rewriterCaps.available}\n`;
+                } else {
+                    updateStatus('rewriter-api', false);
+                    resultsDiv.textContent += 'Rewriter API: Not available\n';
+                }
+
+                // Check Translator API
+                if (chrome.ai.translator?.capabilities) {
+                    const translatorCaps = await chrome.ai.translator.capabilities();
+                    const translatorReady = translatorCaps.available === 'readily';
+                    updateStatus('translator-api', translatorReady);
+                    apiStatus.translator = translatorReady;
+                    resultsDiv.textContent += `Translator API: ${translatorCaps.available}\n`;
+                } else {
+                    updateStatus('translator-api', false);
+                    resultsDiv.textContent += 'Translator API: Not available\n';
+                }
+
+            } catch (error) {
+                resultsDiv.textContent += `Error checking APIs: ${error.message}\n`;
+            }
+        }
+
+        function updateStatus(elementId, isAvailable) {
+            const element = document.getElementById(elementId);
+            if (isAvailable) {
+                element.className = 'status-item available';
+                element.querySelector('.status-icon').textContent = '✅';
+            } else {
+                element.className = 'status-item unavailable';
+                element.querySelector('.status-icon').textContent = '❌';
+            }
+        }
+
+        async function testPrompt() {
+            const resultsDiv = document.getElementById('results-content');
+            document.getElementById('test-results').style.display = 'block';
+            
+            if (!apiStatus.prompt) {
+                resultsDiv.textContent += '\nPrompt API not available for testing.\n';
+                return;
+            }
+
+            try {
+                resultsDiv.textContent += '\nTesting Prompt API...\n';
+                const session = await chrome.ai.createTextSession();
+                const response = await session.prompt('Hello! Can you respond with just "AI is working"?');
+                resultsDiv.textContent += `Prompt test response: ${response}\n`;
+                await session.destroy();
+            } catch (error) {
+                resultsDiv.textContent += `Prompt test error: ${error.message}\n`;
+            }
+        }
+
+        async function testSummarizer() {
+            const resultsDiv = document.getElementById('results-content');
+            document.getElementById('test-results').style.display = 'block';
+            
+            if (!apiStatus.summarizer) {
+                resultsDiv.textContent += '\nSummarizer API not available for testing.\n';
+                return;
+            }
+
+            try {
+                resultsDiv.textContent += '\nTesting Summarizer API...\n';
+                const session = await chrome.ai.summarizer.create();
+                const longText = 'This is a long piece of text that we want to summarize. It contains multiple sentences and ideas. The main point is that we are testing the Chrome AI summarization capabilities. This feature allows web applications to automatically create concise summaries of longer content.';
+                const summary = await session.summarize(longText);
+                resultsDiv.textContent += `Summary test result: ${summary}\n`;
+                await session.destroy();
+            } catch (error) {
+                resultsDiv.textContent += `Summarizer test error: ${error.message}\n`;
+            }
+        }
+
+        function copyStatus() {
+            const status = Object.entries(apiStatus)
+                .map(([key, value]) => `${key}: ${value ? '✅' : '❌'}`)
+                .join('\n');
+            
+            navigator.clipboard.writeText(status).then(() => {
+                alert('Status copied to clipboard!');
+            }).catch(() => {
+                alert('Could not copy to clipboard');
+            });
+        }
+
+        // Auto-check on page load
+        window.addEventListener('load', checkAPIs);
+    </script>
+</body>
+</html>

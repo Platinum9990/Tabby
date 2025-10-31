@@ -145,6 +145,80 @@ function initThemeToggle() {
 
 initThemeToggle();
 
+// Check AI API availability function
+async function checkAIAvailability() {
+  const status = {
+    chromeAI: typeof chrome !== 'undefined' && !!chrome.ai,
+    prompt: false,
+    summarizer: false,
+    writer: false,
+    rewriter: false,
+    translator: false
+  };
+
+  if (status.chromeAI) {
+    try {
+      // Check Prompt API
+      if (chrome.ai.canCreateTextSession) {
+        const availability = await chrome.ai.canCreateTextSession();
+        status.prompt = availability === 'readily';
+      }
+      
+      // Check Summarizer API
+      if (chrome.ai.summarizer?.capabilities) {
+        const caps = await chrome.ai.summarizer.capabilities();
+        status.summarizer = caps.available === 'readily';
+      }
+      
+      // Check Writer API
+      if (chrome.ai.writer?.capabilities) {
+        const caps = await chrome.ai.writer.capabilities();
+        status.writer = caps.available === 'readily';
+      }
+      
+      // Check Rewriter API  
+      if (chrome.ai.rewriter?.capabilities) {
+        const caps = await chrome.ai.rewriter.capabilities();
+      }
+      
+      // Check Translator API
+      if (chrome.ai.translator?.capabilities) {
+        const caps = await chrome.ai.translator.capabilities();
+        status.translator = caps.available === 'readily';
+      }
+    } catch (error) {
+      console.warn('Error checking AI capabilities:', error);
+    }
+  }
+
+  return status;
+}
+
+// Function to display AI status in chat
+async function showAIStatus() {
+  const status = await checkAIAvailability();
+  
+  let message = "🤖 **AI API Status:**\n\n";
+  message += `Chrome AI Support: ${status.chromeAI ? '✅' : '❌'}\n`;
+  message += `Prompt API: ${status.prompt ? '✅' : '❌'}\n`;
+  message += `Summarizer API: ${status.summarizer ? '✅' : '❌'}\n`;
+  message += `Writer API: ${status.writer ? '✅' : '❌'}\n`;
+  message += `Rewriter API: ${status.rewriter ? '✅' : '❌'}\n`;
+  message += `Translator API: ${status.translator ? '✅' : '❌'}\n\n`;
+  
+  if (!status.chromeAI) {
+    message += "💡 **Note:** Chrome AI APIs require Chrome Canary/Dev with experimental flags enabled:\n";
+    message += "• Navigate to `chrome://flags/`\n";
+    message += "• Enable `Prompt API for Gemini Nano`\n";
+    message += "• Enable `Summarization API for Gemini Nano`\n";
+    message += "• Restart Chrome\n\n";
+  }
+  
+  message += "📋 Tabby works fully even without AI APIs using smart algorithms!";
+  
+  addMessage(message, 'bot');
+}
+
 // Show open tabs with favicons, close buttons, active tab highlight
 let allTabs = [];
 
@@ -421,6 +495,13 @@ chatSend.addEventListener('click', () => {
   // Show typing indicator
   showTypingIndicator();
   
+  // Check for AI status command
+  if (text.toLowerCase().includes('ai status') || text.toLowerCase().includes('check ai') || text.toLowerCase().includes('ai available')) {
+    hideTypingIndicator();
+    showAIStatus();
+    return;
+  }
+  
   // Enhanced AI command processing
   if (text.toLowerCase().includes('summarize') || text.toLowerCase().includes('summary')) {
     // Summarize current or specified tab
@@ -502,16 +583,63 @@ chatSend.addEventListener('click', () => {
     return;
   }
   
-  // Default: AI chat for general questions
+  // Default: AI chat for general questions or basic responses
   chrome.runtime.sendMessage({ type: 'aiChat', query: text }, res => {
     hideTypingIndicator();
     if (res && res.ok) {
       addMessage(res.response, 'ai');
     } else {
-      addMessage(`🤖 ${res?.error || 'AI chat temporarily unavailable'}`, 'ai');
+      // Fallback to basic pattern matching when AI isn't available
+      let response = getBasicResponse(text);
+      addMessage(response, 'ai');
     }
   });
 });
+
+// Basic response patterns for when AI isn't available
+function getBasicResponse(text) {
+  const lower = text.toLowerCase();
+  
+  if (lower.includes('hello') || lower.includes('hi')) {
+    return '👋 Hello! I can help you manage your tabs. Try "find tab about..." or "close all tabs".';
+  }
+  
+  if (lower.includes('help')) {
+    return `🤖 Here's what I can do:
+
+• "find tab about [topic]" - Search for tabs
+• "reopen my last tab" - Restore closed tabs  
+• "close all tabs" - Bulk close tabs
+• Use the search box to filter tabs
+• Click the 📄 button to summarize (when AI is available)
+• Click the 📁 button to organize tabs`;
+  }
+  
+  if (lower.includes('tabs') || lower.includes('count')) {
+    return `📊 You currently have ${allTabs.length} tabs open. Use the search box above to find specific tabs quickly!`;
+  }
+  
+  if (lower.includes('thank')) {
+    return '😊 You\'re welcome! Happy to help with your tab management.';
+  }
+  
+  if (lower.includes('close') || lower.includes('cleanup')) {
+    return '🧹 To clean up tabs: Use the ❌ button next to "Close all tabs", or click the X on individual tabs above.';
+  }
+  
+  if (lower.includes('search') || lower.includes('find')) {
+    return '🔍 To find tabs: Use the search box above the tab list, or try saying "find tab about [topic]" for smart search.';
+  }
+  
+  // Default response
+  return `🤖 I heard "${text}". While Chrome's AI APIs aren't available yet, I can still help with:
+
+• Tab management and switching
+• Finding and organizing tabs  
+• Basic browsing assistance
+
+Try "help" for more commands!`;
+}
 
 chatInput.addEventListener('keydown', e => {
   if (e.key === 'Enter') chatSend.click();

@@ -3,8 +3,25 @@
   "name": "Tabby — AI Tab Manager (Prototype)",
   "version": "0.2.0",
   "description": "Find, summarize and manage browser tabs using Chrome's built-in AI APIs.",
-  "permissions": ["storage", "tabs", "scripting", "alarms", "notifications", "activeTab", "sessions"],
+  "permissions": [
+    "storage", 
+    "tabs", 
+    "scripting", 
+    "alarms", 
+    "notifications", 
+    "activeTab", 
+    "sessions",
+    "ai"
+  ],
   "host_permissions": ["<all_urls>"],
+  
+  "trial_tokens": [
+    "A7UIUjJFC6Yx2hJ2lK9hPBG3XF4EIFJXYIcMCsD4TZpnUNfL4Umvwu8Wq4L9ApCtWQsUKmfHxKWybrLD1/DmywEAAACPeyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vZ29hZmZoZGJwZ2NsZmpvZ2picGRoYWxha2Fibmlrb24iLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElNdWx0aW1vZGFsSW5wdXQiLCJleHBpcnkiOjE3NzQzMTA0MDAsImlzVGhpcmRQYXJ0eSI6dHJ1ZX0=",
+    "A4Di1l2NaMskgZ4hdbLAyJYmlPw4g+HEsOQQMWCTbqMBXu0OqccnIcYrxUom6/FJEFHwMzDnZZbUnyDQZEdkQQ4AAACCeyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vZ29hZmZoZGJwZ2NsZmpvZ2picGRoYWxha2Fibmlrb24iLCJmZWF0dXJlIjoiQUlSZXdyaXRlckFQSSIsImV4cGlyeSI6MTc3NjcyOTYwMCwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ==",
+    "A7BETGbQDQfFYjIr1nEbjg97TdN5UXqQJdbWc7vJwIRropdJT88KCbBPpHSVZPXgGpt54SHzQ2CVtDsRykcYNgcAAACAeyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vZ29hZmZoZGJwZ2NsZmpvZ2picGRoYWxha2Fibmlrb24iLCJmZWF0dXJlIjoiQUlXcml0ZXJBUEkiLCJleHBpcnkiOjE3NzY3Mjk2MDAsImlzVGhpcmRQYXJ0eSI6dHJ1ZX0=",
+    "AyVxe0gRssEptOmMla9/A26sCIoTZuqYWlDpVO6+9GiUax6QSPMAxS+ZdiLkp6RzU6WBthbgKoSmuHGm9CT8MA0AAACFeyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vZ29hZmZoZGJwZ2NsZmpvZ2picGRoYWxha2Fibmlrb24iLCJmZWF0dXJlIjoiQUlQcm9vZnJlYWRlckFQSSIsImV4cGlyeSI6MTc3OTE0ODgwMCwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="
+  ],
+  
   "background": { "service_worker": "background.js" },
   "action": {
     "default_popup": "popup/index.html",

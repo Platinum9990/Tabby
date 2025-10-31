@@ -92,6 +92,79 @@ async function initializeAI() {
 // Initialize AI on startup
 initializeAI();
 
+// Smart content extraction without AI APIs
+function extractKeyInfo(text, url) {
+  if (!text) return "No content available to summarize.";
+  
+  const domain = new URL(url).hostname;
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 20);
+  
+  // Get first few sentences and key information
+  const keyPoints = [];
+  
+  // Add domain context
+  if (domain.includes('github')) {
+    keyPoints.push(`📂 GitHub repository: ${extractProjectInfo(text)}`);
+  } else if (domain.includes('stackoverflow')) {
+    keyPoints.push(`❓ Programming Q&A: ${extractQuestionInfo(text)}`);
+  } else if (domain.includes('news') || domain.includes('article')) {
+    keyPoints.push(`📰 News article: ${extractNewsInfo(text)}`);
+  } else {
+    keyPoints.push(`🌐 Website content from ${domain}`);
+  }
+  
+  // Add key sentences (first 2-3 meaningful ones)
+  const meaningfulSentences = sentences
+    .filter(s => !s.includes('cookie') && !s.includes('privacy') && s.length > 30)
+    .slice(0, 3);
+    
+  keyPoints.push(...meaningfulSentences.map(s => `• ${s.trim()}`));
+  
+  return keyPoints.join('\n');
+}
+
+function extractProjectInfo(text) {
+  // Look for README-style content
+  if (text.includes('installation') || text.includes('install')) {
+    return "Contains installation instructions";
+  }
+  if (text.includes('API') || text.includes('documentation')) {
+    return "API or documentation content";
+  }
+  return "Code repository";
+}
+
+function extractQuestionInfo(text) {
+  if (text.includes('answered') || text.includes('solution')) {
+    return "Question with answers available";
+  }
+  return "Programming question/discussion";
+}
+
+function extractNewsInfo(text) {
+  const sentences = text.split('.').filter(s => s.length > 50);
+  return sentences[0]?.slice(0, 100) + "..." || "News content";
+}
+
+function generateBasicSummary(tab) {
+  const domain = new URL(tab.url).hostname;
+  const title = tab.title || 'Untitled page';
+  
+  let summary = `📄 **${title}**\n🌐 From: ${domain}\n`;
+  
+  // Add context based on domain
+  if (domain.includes('gmail')) summary += '📧 Gmail inbox or email';
+  else if (domain.includes('youtube')) summary += '🎥 YouTube video or channel';
+  else if (domain.includes('github')) summary += '💻 GitHub repository or code';
+  else if (domain.includes('docs.google')) summary += '📝 Google Docs document';
+  else if (domain.includes('stackoverflow')) summary += '❓ Programming Q&A';
+  else if (domain.includes('linkedin')) summary += '💼 LinkedIn professional content';
+  else if (domain.includes('twitter')) summary += '🐦 Twitter/X social content';
+  else summary += '🌐 Web page content';
+  
+  return summary;
+}
+
 // --- Load initial state from storage ---
 chrome.storage.local.get(['recentlyClosed', 'lastOpenedTabInfo'], (result) => {
   recentlyClosed = result.recentlyClosed || [];
@@ -401,37 +474,40 @@ Provide a helpful, concise response as their browsing companion:`;
       console.log('Received summarizeTab message:', msg.tabId);
       try {
         const tabId = msg.tabId || (await chrome.tabs.query({active: true, currentWindow: true}))[0]?.id;
-        const meta = tabMeta[tabId];
         
-        if (!meta || !meta.text) {
-          sendResponse({ ok: false, error: "No content available for this tab." });
+        if (!tabId) {
+          sendResponse({ ok: false, error: "No tab to summarize." });
           return;
         }
-
+        
+        // Get current tab info
+        const tab = await chrome.tabs.get(tabId);
         let summary = '';
+        
+        // Try AI first, then fallback to smart extraction
         if (aiCapabilities.summarizer && chrome.ai.summarizer) {
-          const summarizer = await chrome.ai.summarizer.create({
-            type: 'key-points',
-            format: 'plain-text',
-            length: 'medium'
-          });
-          summary = await summarizer.summarize(meta.text);
-          await summarizer.destroy();
-        } else if (aiCapabilities.prompt && chrome.ai) {
-          const session = await chrome.ai.createTextSession();
-          const prompt = `Summarize this web page in 2-3 key points:
-
-Title: ${meta.title}
-Content: ${meta.text.slice(0, 3000)}
-
-Key points:`;
-          summary = await session.prompt(prompt);
-          await session.destroy();
+          const meta = tabMeta[tabId];
+          if (meta && meta.text) {
+            const summarizer = await chrome.ai.summarizer.create({
+              type: 'key-points',
+              format: 'plain-text',
+              length: 'medium'
+            });
+            summary = await summarizer.summarize(meta.text);
+            await summarizer.destroy();
+          }
         } else {
-          throw new Error("Summarization not available");
+          // Smart extraction without AI
+          const meta = tabMeta[tabId];
+          if (meta && meta.text) {
+            summary = extractKeyInfo(meta.text, tab.url);
+          } else {
+            // Extract basic info from tab
+            summary = generateBasicSummary(tab);
+          }
         }
-
-        sendResponse({ ok: true, summary, title: meta.title });
+        
+        sendResponse({ ok: true, summary, title: tab.title, url: tab.url });
       } catch (err) {
         console.error('Summarization failed:', err);
         sendResponse({ ok: false, error: `Summarization failed: ${err.message}` });
@@ -440,30 +516,35 @@ Key points:`;
     } else if (msg.type === 'organizeTab') {
       console.log('Received organizeTab message');
       try {
-        if (!aiCapabilities.prompt || !chrome.ai) {
-          throw new Error("AI organization not available.");
-        }
+        const tabs = await chrome.tabs.query({});
+        
+        if (aiCapabilities.prompt && chrome.ai) {
+          // Use AI if available
+          const session = await chrome.ai.createTextSession();
+          const tabContext = tabs
+            .map(tab => `${tab.id}: ${tab.title} (${new URL(tab.url).hostname})`)
+            .join('\n');
 
-        const session = await chrome.ai.createTextSession();
-        const tabContext = Object.entries(tabMeta)
-          .map(([id, meta]) => `${id}: ${meta.title} (${new URL(meta.url).hostname})`)
-          .join('\n');
-
-        const prompt = `Analyze these browser tabs and suggest how to organize them into logical groups:
+          const prompt = `Analyze these browser tabs and suggest how to organize them into logical groups:
 
 ${tabContext}
 
 Suggest 3-5 groups with descriptive names and which tab IDs belong in each group. Format as JSON:
 {"groups": [{"name": "Group Name", "tabIds": [1,2,3]}]}`;
 
-        const response = await session.prompt(prompt);
-        await session.destroy();
-        
-        try {
-          const suggestions = JSON.parse(response);
-          sendResponse({ ok: true, suggestions });
-        } catch {
-          sendResponse({ ok: true, suggestions: { groups: [] }, rawResponse: response });
+          const response = await session.prompt(prompt);
+          await session.destroy();
+          
+          try {
+            const suggestions = JSON.parse(response);
+            sendResponse({ ok: true, suggestions });
+          } catch {
+            sendResponse({ ok: true, suggestions: { groups: [] }, rawResponse: response });
+          }
+        } else {
+          // Smart organization without AI
+          const groups = organizeTabsSmart(tabs);
+          sendResponse({ ok: true, suggestions: { groups } });
         }
       } catch (err) {
         console.error('Tab organization failed:', err);
@@ -475,49 +556,72 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
 
     } else if (msg.type === 'search') {
       console.log('Received search message:', msg.query);
-      // --- Hackathon Suggestion: Replace Server Call with Built-in Prompt API ---
       try {
-         if (!chrome.ai) { throw new Error("Built-in AI API not available."); }
-
-         const session = await chrome.ai.createTextSession();
-         // Prepare context about open tabs
-         const tabContext = Object.entries(tabMeta)
-           .map(([id, meta]) => `Tab ID ${id}: "${meta.title}" (${meta.url}) - Snippet: ${meta.text?.slice(0, 100)}...`)
-           .join('\n');
-
-         const prompt = `Given the following open tabs:\n${tabContext}\n\nWhich tab best matches the query: "${msg.query}"?\nRespond ONLY with the Tab ID number of the best match, or "NONE" if no good match is found.`;
-
-         const response = await session.prompt(prompt);
-         await session.destroy();
-
-         console.log('AI Find Response:', response);
-         const foundIdStr = response.trim();
-
-         if (foundIdStr !== "NONE" && /^\d+$/.test(foundIdStr)) {
-            const foundId = parseInt(foundIdStr, 10);
-            const targetTab = await chrome.tabs.get(foundId).catch(() => null); // Verify tab still exists
-
-            if (targetTab) {
-              console.log(`AI found match: Tab ID ${foundId}. Activating.`);
-              await chrome.tabs.update(foundId, { active: true });
-              if (targetTab.windowId) {
-                 await chrome.windows.update(targetTab.windowId, { focused: true });
-              }
-              sendResponse({ ok: true, found: true, tabId: foundId });
-            } else {
-              console.log(`AI suggested tab ${foundId}, but it no longer exists.`);
-              sendResponse({ ok: true, found: false, message: "AI suggested a tab, but it might have been closed." });
+        // Smart tab finding without AI APIs - using pattern matching and keywords
+        const query = msg.query.toLowerCase();
+        const tabs = await chrome.tabs.query({});
+        
+        let bestMatch = null;
+        let bestScore = 0;
+        let candidates = [];
+        
+        for (const tab of tabs) {
+          let score = 0;
+          const title = (tab.title || '').toLowerCase();
+          const url = (tab.url || '').toLowerCase();
+          const domain = new URL(tab.url).hostname.toLowerCase();
+          
+          // Direct keyword matching
+          if (title.includes(query) || url.includes(query)) {
+            score += 10;
+          }
+          
+          // Domain matching
+          if (domain.includes(query)) {
+            score += 8;
+          }
+          
+          // Fuzzy matching for common terms
+          const keywords = query.split(' ');
+          keywords.forEach(keyword => {
+            if (title.includes(keyword)) score += 3;
+            if (url.includes(keyword)) score += 2;
+            if (domain.includes(keyword)) score += 4;
+          });
+          
+          // Common site patterns
+          if (query.includes('mail') && (domain.includes('gmail') || domain.includes('outlook'))) score += 15;
+          if (query.includes('video') && (domain.includes('youtube') || domain.includes('netflix'))) score += 15;
+          if (query.includes('social') && (domain.includes('facebook') || domain.includes('twitter') || domain.includes('linkedin'))) score += 15;
+          if (query.includes('code') && (domain.includes('github') || domain.includes('stackoverflow'))) score += 15;
+          if (query.includes('doc') && (domain.includes('docs.google') || domain.includes('notion'))) score += 15;
+          
+          if (score > 0) {
+            candidates.push({ tab, score, title: tab.title });
+            if (score > bestScore) {
+              bestScore = score;
+              bestMatch = tab;
             }
-         } else {
-           console.log('AI found no matching tab.');
-           sendResponse({ ok: true, found: false, message: "AI couldn't find a matching tab." });
-         }
-
+          }
+        }
+        
+        if (bestMatch && bestScore >= 3) {
+          console.log(`Smart search found match: ${bestMatch.title} (score: ${bestScore})`);
+          await chrome.tabs.update(bestMatch.id, { active: true });
+          if (bestMatch.windowId) {
+            await chrome.windows.update(bestMatch.windowId, { focused: true });
+          }
+          sendResponse({ ok: true, found: true, tabId: bestMatch.id, title: bestMatch.title });
+        } else {
+          console.log('Smart search found no good matches');
+          const candidateList = candidates.slice(0, 3).map(c => ({ title: c.title, score: c.score }));
+          sendResponse({ ok: true, found: false, candidates: candidateList, message: "No good match found." });
+        }
+        
       } catch (err) {
-        console.error('AI Find call failed', err);
-        sendResponse({ ok: false, error: `AI search failed: ${err.message}` });
+        console.error('Smart search failed:', err);
+        sendResponse({ ok: false, error: `Search failed: ${err.message}` });
       }
-      // ----------------------------------------------------------------------
 
     } else if (msg.type === 'reopenTab') {
       console.log('Received reopenTab message:', msg.query);
@@ -616,5 +720,83 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
   })(); // Immediately invoke async function
   return true; // Indicate async response for all handlers that might be async
 });
+
+// Smart tab organization without AI
+function organizeTabsSmart(tabs) {
+  const groups = new Map();
+  
+  tabs.forEach(tab => {
+    const domain = getDomain(tab.url);
+    const category = categorizeTab(tab, domain);
+    
+    if (!groups.has(category)) {
+      groups.set(category, []);
+    }
+    groups.get(category).push(tab.id);
+  });
+  
+  // Convert to format expected by UI
+  return Array.from(groups.entries()).map(([name, tabIds]) => ({
+    name,
+    tabIds
+  }));
+}
+
+function categorizeTab(tab, domain) {
+  const title = tab.title.toLowerCase();
+  const url = tab.url.toLowerCase();
+  
+  // Work/Productivity
+  if (domain.includes('google') && (url.includes('docs') || url.includes('sheets') || url.includes('slides'))) {
+    return 'Work Documents';
+  }
+  if (['slack', 'teams', 'zoom', 'discord', 'skype'].some(w => domain.includes(w))) {
+    return 'Communication';
+  }
+  if (['gmail', 'outlook', 'yahoo'].some(w => domain.includes(w)) || url.includes('mail')) {
+    return 'Email';
+  }
+  
+  // Development
+  if (['github', 'gitlab', 'bitbucket', 'stackoverflow', 'codepen'].some(w => domain.includes(w))) {
+    return 'Development';
+  }
+  if (['localhost', '127.0.0.1'].some(w => url.includes(w)) || /:\d{4}/.test(url)) {
+    return 'Local Development';
+  }
+  
+  // Social Media
+  if (['facebook', 'twitter', 'instagram', 'linkedin', 'reddit', 'tiktok'].some(w => domain.includes(w))) {
+    return 'Social Media';
+  }
+  
+  // Shopping
+  if (['amazon', 'ebay', 'etsy', 'aliexpress', 'shopify'].some(w => domain.includes(w)) || 
+      title.includes('cart') || title.includes('checkout')) {
+    return 'Shopping';
+  }
+  
+  // News & Information
+  if (['news', 'bbc', 'cnn', 'reuters', 'techcrunch', 'wired'].some(w => domain.includes(w))) {
+    return 'News';
+  }
+  if (['wikipedia', 'wikimedia'].some(w => domain.includes(w))) {
+    return 'Reference';
+  }
+  
+  // Entertainment
+  if (['youtube', 'netflix', 'spotify', 'twitch', 'hulu'].some(w => domain.includes(w))) {
+    return 'Entertainment';
+  }
+  
+  // Learning
+  if (['coursera', 'udemy', 'khan', 'edx', 'pluralsight'].some(w => domain.includes(w))) {
+    return 'Learning';
+  }
+  
+  // Default grouping by domain
+  const baseDomain = domain.split('.').slice(-2).join('.');
+  return baseDomain.charAt(0).toUpperCase() + baseDomain.slice(1);
+}
 
 console.log("Tabby background service worker started."); // Log startup
