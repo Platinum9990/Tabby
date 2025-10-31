@@ -502,6 +502,48 @@ chatSend.addEventListener('click', () => {
     return;
   }
   
+  // Check for close tab intent - MUST come before other checks
+  if (text.toLowerCase().includes('close')) {
+    const closeMatch = text.match(/close (the )?(tab|window) (about |with |containing |for )?(.+)/i) ||
+                       text.match(/close (.+) tab/i) ||
+                       text.match(/close (.+)/i);
+    
+    // Extract what tab to close
+    let query = '';
+    if (closeMatch) {
+      // Extract the target from the match
+      if (closeMatch[4]) {
+        query = closeMatch[4]; // "close tab about [query]"
+      } else if (closeMatch[1] && !['the', 'tab', 'window'].includes(closeMatch[1].toLowerCase())) {
+        query = closeMatch[1]; // "close [query] tab" or "close [query]"
+      }
+    }
+    
+    // Special handling for "close this tab" or "close current tab"
+    if (text.toLowerCase().includes('this tab') || text.toLowerCase().includes('current tab')) {
+      query = '';
+    }
+    
+    console.log('Detected close command with query:', query);
+    chrome.runtime.sendMessage({ type: 'closeTab', query }, res => {
+      hideTypingIndicator();
+      if (!res) { 
+        addMessage('No response from background.', 'ai'); 
+        return; 
+      }
+      if (res.ok && res.closed) {
+        addMessage(`✅ Closed tab: ${res.closed.title}`, 'ai');
+        // Update the tabs list
+        renderTabs();
+      } else if (res.candidates && res.candidates.length) {
+        addMessage(`🔍 No exact match to close. Similar tabs: ${res.candidates.map(c=>c.title).join(', ')}`, 'ai');
+      } else {
+        addMessage(`❌ ${res.error || 'Could not find tab to close'}`, 'ai');
+      }
+    });
+    return;
+  }
+
   // Enhanced AI command processing
   if (text.toLowerCase().includes('summarize') || text.toLowerCase().includes('summary')) {
     // Summarize current or specified tab
@@ -537,12 +579,12 @@ chatSend.addEventListener('click', () => {
     return;
   }
   
-  // Check for close tab intent
-  const closeMatch = text.match(/close (the )?(tab|window) (about |with |containing |for )?(.+)/i) ||
-                     text.match(/close (.+) tab/i) ||
-                     text.match(/close (.+)/i);
-  
-  if (text.toLowerCase().includes('close') && (text.toLowerCase().includes('tab') || closeMatch)) {
+  // Check for close tab intent - MUST come before other checks
+  if (text.toLowerCase().includes('close')) {
+    const closeMatch = text.match(/close (the )?(tab|window) (about |with |containing |for )?(.+)/i) ||
+                       text.match(/close (.+) tab/i) ||
+                       text.match(/close (.+)/i);
+    
     // Extract what tab to close
     let query = '';
     if (closeMatch) {
@@ -559,6 +601,7 @@ chatSend.addEventListener('click', () => {
       query = '';
     }
     
+    console.log('Detected close command with query:', query);
     chrome.runtime.sendMessage({ type: 'closeTab', query }, res => {
       hideTypingIndicator();
       if (!res) { 
