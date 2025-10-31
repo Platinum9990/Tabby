@@ -553,6 +553,7 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
 
     } else if (msg.type === 'getAiCapabilities') {
       sendResponse({ ok: true, capabilities: aiCapabilities });
+      return;
 
     } else if (msg.type === 'addToReadingList') {
       console.log('Received addToReadingList message:', msg.tabId);

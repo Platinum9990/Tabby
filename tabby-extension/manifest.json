@@ -29,14 +29,14 @@
   "action": {
     "default_popup": "popup/index.html",
     "default_icon": {
-      "16": "assets/icon16.png",
-      "48": "assets/icon48.png",
-      "128": "assets/icon-128.png"
+      "16": "assets/icon.svg",
+      "48": "assets/icon.svg",
+      "128": "assets/icon.svg"
     }
   },
   "icons": {
-     "16": "assets/icon16.png",
-     "48": "assets/icon48.png",
-     "128": "assets/icon-128.png"
+     "16": "assets/icon.svg",
+     "48": "assets/icon.svg",
+     "128": "assets/icon.svg"
   }
 }
