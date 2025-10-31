@@ -553,7 +553,6 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
 
     } else if (msg.type === 'getAiCapabilities') {
       sendResponse({ ok: true, capabilities: aiCapabilities });
-      return;
 
     } else if (msg.type === 'addToReadingList') {
       console.log('Received addToReadingList message:', msg.tabId);
@@ -881,14 +880,13 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
       }
       if (match) {
         console.log(`Reopening tab: ${match.title}`);
-        chrome.tabs.create({ url: match.url }, (newTab) => {
-            if (chrome.runtime.lastError) {
-                console.error("Error reopening tab:", chrome.runtime.lastError);
-                sendResponse({ ok: false, error: `Failed to reopen tab: ${chrome.runtime.lastError.message}` });
-            } else {
-                sendResponse({ ok: true, reopened: match });
-            }
-        });
+        try {
+          const newTab = await chrome.tabs.create({ url: match.url });
+          sendResponse({ ok: true, reopened: match });
+        } catch (err) {
+          console.error("Error reopening tab:", err);
+          sendResponse({ ok: false, error: `Failed to reopen tab: ${err.message}` });
+        }
       } else {
         sendResponse({ ok: false, error: 'No matching closed tab found in recent list.' });
       }
@@ -900,27 +898,29 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
       const lastTab = lastOpenedTabInfo;
       if (lastTab && lastTab.url) {
         console.log(`Opening last tracked opened tab: ${lastTab.title}`);
-        chrome.tabs.create({ url: lastTab.url }, (newTab) => {
-             if (chrome.runtime.lastError) {
-                console.error("Error opening last tab:", chrome.runtime.lastError);
-                sendResponse({ ok: false, error: `Failed to open last tab: ${chrome.runtime.lastError.message}` });
-            } else {
-                sendResponse({ ok: true, opened: lastTab });
-            }
-        });
+        try {
+          const newTab = await chrome.tabs.create({ url: lastTab.url });
+          sendResponse({ ok: true, opened: lastTab });
+        } catch (err) {
+          console.error("Error opening last tab:", err);
+          sendResponse({ ok: false, error: `Failed to open last tab: ${err.message}` });
+        }
       } else {
         sendResponse({ ok: false, error: 'No last opened tab found.' });
       }
 
     } else if (msg.type === 'listSummaries') {
        console.log('Received listSummaries message');
-       // Example: Fetch items starting with 'summary-' prefix
-       chrome.storage.local.get(null, items => {
-           const summaries = Object.entries(items)
-                               .filter(([key, value]) => key.startsWith('summary-')) // Adjust prefix if needed
-                               .map(([key, value]) => value);
-           sendResponse({ ok: true, items: summaries });
-       });
+       try {
+         const items = await chrome.storage.local.get(null);
+         const summaries = Object.entries(items)
+                             .filter(([key, value]) => key.startsWith('summary-'))
+                             .map(([key, value]) => value);
+         sendResponse({ ok: true, items: summaries });
+       } catch (err) {
+         console.error('List summaries failed:', err);
+         sendResponse({ ok: false, error: `Failed to list summaries: ${err.message}` });
+       }
     } else {
        console.log('Received unknown message type:', msg.type);
        sendResponse({ ok: false, error: `Unknown message type: ${msg.type}` }); // Respond for unknown types
