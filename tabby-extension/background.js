@@ -437,6 +437,8 @@ chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) =
 // Message handling from popup/content scripts
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
+    console.log('🔍 DEBUG: Received message type:', msg.type);
+    
     // --- New AI-Enhanced Commands ---
     if (msg.type === 'aiChat') {
       console.log('Received aiChat message:', msg.query);
@@ -552,9 +554,11 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
       }
 
     } else if (msg.type === 'getAiCapabilities') {
+      console.log('✅ DEBUG: Processing getAiCapabilities');
       sendResponse({ ok: true, capabilities: aiCapabilities });
 
     } else if (msg.type === 'addToReadingList') {
+      console.log('✅ DEBUG: Processing addToReadingList');
       console.log('Received addToReadingList message:', msg.tabId);
       try {
         const tabId = msg.tabId || (await chrome.tabs.query({active: true, currentWindow: true}))[0]?.id;
@@ -609,6 +613,7 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
       }
 
     } else if (msg.type === 'smartBookmark') {
+      console.log('✅ DEBUG: Processing smartBookmark');
       console.log('Received smartBookmark message:', msg.tabId);
       try {
         const tabId = msg.tabId || (await chrome.tabs.query({active: true, currentWindow: true}))[0]?.id;
@@ -665,6 +670,7 @@ Suggest 3-5 groups with descriptive names and which tab IDs belong in each group
       }
 
     } else if (msg.type === 'createTabGroup') {
+      console.log('✅ DEBUG: Processing createTabGroup');
       console.log('Received createTabGroup message:', msg.category);
       try {
         // Check if Tab Groups API is available
@@ -1015,4 +1021,4 @@ function categorizeTab(tab, domain) {
   return baseDomain.charAt(0).toUpperCase() + baseDomain.slice(1);
 }
 
-console.log("Tabby background service worker started."); // Log startup
+console.log("🚀 Tabby background service worker started - Version 2.1"); // Log startup
